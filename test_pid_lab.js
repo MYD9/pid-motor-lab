@@ -118,7 +118,7 @@ test('practice uses fixed conditions and does not mutate submitted state',()=>{
 test('practice rewards PI improvement and evaluates A and B independently',()=>{
   const good=C.defaults(),weak=C.defaults();for(const ch of ['A','B']){weak[ch].kp=.015;weak[ch].ki=0;}
   const a=P.evaluate(good),b=P.evaluate(weak);
-  assert.ok(a.score>b.score+40);assert.ok(a.score>=75&&a.score<100);
+  assert.ok(a.motors.A.score>b.motors.A.score+40);assert.ok(a.motors.A.score>=75&&a.motors.A.score<100);
   assert.equal(b.motors.A.values.recovery,null);
   good.B.ki=0;const changed=P.evaluate(good);
   assert.equal(a.motors.A.score,changed.motors.A.score);assert.ok(changed.motors.B.score<a.motors.B.score);
@@ -127,12 +127,12 @@ test('practice rewards PI improvement and evaluates A and B independently',()=>{
 test('practice rejects invalid parameters and keeps extreme grades finite',()=>{
   for(const value of [NaN,Infinity,-1,2]){const s=C.defaults();s.A.kp=value;assert.throws(()=>P.evaluate(s));}
   for(const pid of [[0,0,0],[1,2,.05]]){const s=C.defaults();for(const ch of ['A','B'])[s[ch].kp,s[ch].ki,s[ch].kd]=pid;
-    const r=P.evaluate(s);assert.ok(Number.isFinite(r.score)&&r.score>=0&&r.score<=100);
-    if(pid[0]===0){assert.ok(r.score<60);assert.equal(r.motors.A.values.error,100);}
+    const r=P.evaluate(s);assert.ok(Object.values(r.motors).every(m=>Number.isFinite(m.score)&&m.score>=0&&m.score<=100));
+    if(pid[0]===0){assert.ok(r.motors.A.score<60);assert.equal(r.motors.A.values.error,100);}
   }
 });
 test('guidance prioritizes one parameter and exposes phase evidence without changing scores',()=>{
-  const s=C.defaults(),r=P.evaluate(s);assert.equal(r.score,89);
+  const s=C.defaults(),r=P.evaluate(s);assert.equal(r.motors.A.score,89);assert.equal(r.motors.B.score,88);assert.equal(r.score,undefined);
   const g=r.motors.A.guide;assert.equal(g.key,'ki');assert.equal(g.from,.08);assert.equal(g.to,.064);
   assert.ok(g.evidence.includes('超调'));assert.ok(g.watch.includes('10–12'));
   assert.equal(r.motors.A.phases.length,3);assert.ok(r.motors.A.phases.every(p=>Number.isFinite(p.signedError)&&p.ripple>=0));
@@ -152,5 +152,12 @@ test('problem markers use exact thresholds and do not flag normal startup as slo
   assert.equal(get('error')[0].start,9);assert.equal(get('error')[0].end,10);
   assert.equal(get('slow')[0].start,9);assert.equal(get('slow')[0].end,10);
   assert.ok(Math.abs(get('overshoot')[0].start-10.2)<1e-8);assert.ok(get('saturation').length>0);
+});
+test('single-motor grading excludes the other motor and never returns a combined score',()=>{
+  const s=C.defaults();s.A.kp=NaN;
+  const r=P.evaluate(s,['B']);assert.deepEqual(Object.keys(r.motors),['B']);
+  assert.equal(r.motors.B.score,88);assert.equal(r.motors.B.grade,'良好');assert.equal(r.score,undefined);assert.equal(r.grade,undefined);
+  const dual=P.evaluate(C.defaults());assert.equal(dual.motors.A.score,89);assert.equal(dual.motors.B.score,88);
+  for(const scope of [[],['C'],['A','A'],['A','B','A']])assert.throws(()=>P.evaluate(C.defaults(),scope));
 });
 console.log(`${cases} simulation tests passed. These do not validate a real motor or browser rendering.`);

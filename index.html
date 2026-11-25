@@ -132,9 +132,10 @@ const PracticeCore = (()=>{
     {key:'recovery',label:'加 / 撤载恢复',unit:'s',weight:25,good:1.5,bad:5},
     {key:'saturation',label:'输出饱和时间',unit:'%',weight:10,good:5,bad:40}
   ];
-  function setup(pid){
+  function setup(pid,scope=['A','B']){
+    if(!Array.isArray(scope)||!scope.length||scope.length>2||new Set(scope).size!==scope.length||scope.some(ch=>!['A','B'].includes(ch)))throw Error('无效电机范围');
     const s=LabCore.defaults();
-    for(const ch of ['A','B'])for(const k of ['kp','ki','kd']){
+    for(const ch of scope)for(const k of ['kp','ki','kd']){
       const v=pid[ch][k],max={kp:1,ki:2,kd:.05}[k];
       if(!Number.isFinite(v)||v<0||v>max)throw Error('无效 PID 参数');
       s[ch][k]=v;
@@ -148,9 +149,9 @@ const PracticeCore = (()=>{
     const t=lastBad<0?start:phase[lastBad].t+LabCore.DT;
     return t<=end-.5?t-start:null;
   }
-  function evaluate(pid){
-    const state=setup(pid),motors={};
-    for(const ch of ['A','B']){
+  function evaluate(pid,scope=['A','B']){
+    const state=setup(pid,scope),motors={};
+    for(const ch of scope){
       const p=state[ch],data=LabCore.simulate(p,state.options);
       const tail=data.filter(r=>(r.t>=4&&r.t<5)||(r.t>=9&&r.t<10)||r.t>=15);
       const mean=a=>a.reduce((s,v)=>s+v,0)/a.length;
@@ -176,10 +177,9 @@ const PracticeCore = (()=>{
           recovery:label==='起步 / 空载'?values.settle:label==='加负载'?values.loadRecovery:values.unloadRecovery};
       });
       const guide=guidance(p,values,phases);
-      motors[ch]={pid:{kp:p.kp,ki:p.ki,kd:p.kd},values,rows,score,tips,data,phases,guide,markers:markers(data)};
+      motors[ch]={pid:{kp:p.kp,ki:p.ki,kd:p.kd},values,rows,score,grade:score>=90?'优秀':score>=75?'良好':score>=60?'继续优化':'需要调整',tips,data,phases,guide,markers:markers(data)};
     }
-    const score=Math.round((motors.A.score+motors.B.score)/2);
-    return {version:'practice-v1',state,motors,score,grade:score>=90?'优秀':score>=75?'良好':score>=60?'继续优化':'需要调整'};
+    return {version:'practice-v2',state,motors,channels:[...scope]};
   }
   function guidance(p,v,phases){
     const f=x=>Number(x.toFixed(5));
@@ -225,7 +225,7 @@ const PracticeCore = (()=>{
 if(typeof module!=='undefined'&&module.exports)module.exports={LabCore,MODEL_DEFAULTS,PracticeCore};
 if(typeof document!=='undefined')(() => {
   const $=id=>document.getElementById(id), channels=['A','B'];
-  let baseline=null,lessonIndex=0,loadEvents=null;
+  let baseline=null,lessonIndex=0,loadEvents=null,motorMode='dual',selectedMotor='A';
   let state=LabCore.defaults(),series={},results={},viewTime=LabCore.END,playing=false,lastFrame=0,hoverTime=null,animation=0;
   const specs=[['kp','Kp · 比例','% / (counts/s)',0,1,.005],['ki','Ki · 积分','% / count',0,2,.01],['kd','Kd · 微分','% · s² / count',0,.05,.001],['target','目标速度','x4 counts/s',-1500,1500,10],['cap','PWM 上限','%',0,30,1],['accel','目标加速度上限','counts/s²',10,1500,10]];
   const plantSpecs=[['gain','速度增益 K','(counts/s) / %',1,300,.1],['deadzone','等效运动死区','%',0,25,.01],['tau','时间常数 τ','s',.005,1,.001]];
@@ -235,7 +235,7 @@ if(typeof document!=='undefined')(() => {
   $('presets').innerHTML=LabCore.presets.map(p=>`<button data-preset="${p.id}" aria-pressed="false">${p.label}</button>`).join('');
   function syncControls(){for(const ch of channels){for(const s of [...specs,...plantSpecs])for(const type of ['range','number'])$(`${ch}-${s[0]}-${type}`).value=state[ch][s[0]];$(`${ch}-provenance`).textContent=`参数来源：${state[ch].provenance}`;}for(const key of Object.keys(state.options))$(key).checked=state.options[key];updateSourceSummary();}
   function updateSourceSummary(){$('model-status').textContent=`当前模型来源：A ${state.A.provenance}；B ${state.B.provenance}。`;}
-  function compute(){playing=false;$('play').textContent='播放仿真';for(const ch of channels){series[ch]=LabCore.simulate(state[ch],{...state.options,...(loadEvents===null?{}:{loadEvents})});results[ch]=LabCore.metrics(series[ch],state[ch],{...state.options,...(loadEvents===null?{}:{loadEvents})});const m=results[ch];$(`${ch}-error`).textContent=m.error.toFixed(1);$(`${ch}-overshoot`).textContent=m.overshoot===null?'—':m.overshoot.toFixed(1);$(`${ch}-settled`).textContent=m.settled===null?'未稳定':m.settled.toFixed(2);$(`${ch}-limit`).textContent=Math.abs(state[ch].target)>m.maxPossible?`目标超出此模型在当前上限下的稳态能力（约 ${m.maxPossible.toFixed(0)} counts/s）。`:m.ready>=m.end?'目标斜坡尚未完成：本阶段不足以评估稳定。':'结果只针对上述教学模型。';}viewTime=LabCore.END;hoverTime=null;$('sim-status').textContent='完整模拟已计算';render();}
+  function compute(){playing=false;$('play').textContent='播放仿真';for(const ch of channels){series[ch]=LabCore.simulate(motorMode==='single'&&ch!==selectedMotor?{...state[ch],target:0}:state[ch],{...state.options,...(loadEvents===null?{}:{loadEvents})});results[ch]=LabCore.metrics(series[ch],state[ch],{...state.options,...(loadEvents===null?{}:{loadEvents})});const m=results[ch];$(`${ch}-error`).textContent=m.error.toFixed(1);$(`${ch}-overshoot`).textContent=m.overshoot===null?'—':m.overshoot.toFixed(1);$(`${ch}-settled`).textContent=m.settled===null?'未稳定':m.settled.toFixed(2);$(`${ch}-limit`).textContent=Math.abs(state[ch].target)>m.maxPossible?`目标超出此模型在当前上限下的稳态能力（约 ${m.maxPossible.toFixed(0)} counts/s）。`:m.ready>=m.end?'目标斜坡尚未完成：本阶段不足以评估稳定。':'结果只针对上述教学模型。';}viewTime=LabCore.END;hoverTime=null;$('sim-status').textContent='完整模拟已计算';render();}
   function clearPreset(){document.querySelectorAll('[data-preset]').forEach(b=>b.setAttribute('aria-pressed','false'));$('preset-note').textContent='自定义实验：固定模型和实验条件，一次只改一个 PID 参数，比较结果。';}
   document.querySelectorAll('[data-channel]').forEach(input=>input.addEventListener('input',()=>{if(input.value===''||!Number.isFinite(Number(input.value)))return;const ch=input.dataset.channel,key=input.dataset.key,spec=[...specs,...plantSpecs].find(s=>s[0]===key);const value=LabCore.clamp(Number(input.value),spec[3],spec[4]);state[ch][key]=value;const twin=input.id.endsWith('-range')?'number':'range';$(`${ch}-${key}-${twin}`).value=value;if(plantSpecs.some(s=>s[0]===key)){state[ch].provenance='用户修改的教学模型，尚未由本车实测拟合';$(`${ch}-provenance`).textContent=`参数来源：${state[ch].provenance}`;updateSourceSummary();}clearPreset();compute();}));
   document.querySelectorAll('[data-channel]').forEach(input=>input.addEventListener('change',()=>{input.value=state[input.dataset.channel][input.dataset.key];}));
@@ -298,14 +298,13 @@ if(typeof document!=='undefined')(() => {
   $('advanced-mode').onchange=()=>{document.body.classList.toggle('beginner',!$('advanced-mode').checked);render();};
   window.addEventListener('resize',()=>requestAnimationFrame(render));syncControls();$('preset-note').textContent='当前为本车实测 PI 参数与辨识教学模型，目标 600 counts/s、加速度 1000 counts/s²。先观察，再选择课堂预设。';compute();loadLesson();
 
-  let selectedMotor='A';
   function compactReadout(){
     if($("motor-stage"))drawMotors();
     const r=series[selectedMotor][Math.min(series[selectedMotor].length-1,Math.round((hoverTime??viewTime)/LabCore.DT))],p=state[selectedMotor];
     const saturated=p.cap>0 && Math.abs(r.output)>=p.cap-.01;
     $('compact-story').textContent=p.cap===0?'PWM 上限为 0，电机不转。':saturated?'输出到顶：先检查 PWM 上限，再调 PID。':Math.abs(r.target-r.measured)<Math.max(5,Math.abs(r.target)*.05)?'已接近目标，仍需 PWM 维持转速。':'目标与测速有差距：观察 P、I 如何补足输出。';
     $('compact-story').title=$(`${selectedMotor}-limit`).textContent;
-    $('quick-tip').textContent=document.body.classList.contains('practice')?'600 cps · 30% · 5s 加载 / 10s 撤载 · 只调 PID':['增大 P，偏差减小','加入 I，补足偏差','第 7 秒加负载','降低上限，观察饱和','第 8 秒降速','加入 D，观察抖动'][lessonIndex];
+    $('quick-tip').textContent=document.body.classList.contains('practice')?(motorMode==='single'?selectedMotor+' · ':'A / B · ')+'600 cps · 30% · 5s 加载 / 10s 撤载':['增大 P，偏差减小','加入 I，补足偏差','第 7 秒加负载','降低上限，观察饱和','第 8 秒降速','加入 D，观察抖动'][lessonIndex];
     $('compact-baseline').textContent=baseline?'灰虚线：修改前':'先保存，再调参';
   }
   function compactLayout(){
@@ -378,7 +377,7 @@ if(typeof document!=='undefined')(() => {
     #practice-report{width:min(850px,96vw);max-height:94dvh;padding:16px;overflow:auto}
     #practice-report .dialog-head{padding:0 0 8px;position:static}#practice-report h2{font-size:20px}
     .report-summary{display:flex;gap:14px;align-items:center;padding:8px 12px;background:#e9f5f1;border-radius:9px}
-    .report-summary strong{font-size:28px;color:#087568}.report-summary span{font-size:12px}
+    .motor-score{flex:1}.motor-score strong{display:block}.report-summary strong{font-size:28px;color:#087568}.report-summary span{font-size:12px}
     .report-nav{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}.report-nav button{padding:4px 10px;font-size:12px}
     .guide-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:10px 0}.guide-card{background:#f4f7f9;border:1px solid #e1e9ed;border-radius:9px;padding:10px;font-size:12px;line-height:1.65}.guide-card b{display:block;color:#086d60;margin-bottom:4px}.guide-title{font-size:16px;margin:8px 0}.guide-step{background:#e9f5f1;border-radius:8px;padding:8px 10px;font-size:13px}.report-nav button[aria-pressed=true]{background:#e6f3f1;border-color:#329e8d;color:#096c5b}.phase-note{font-size:12px;line-height:1.8;margin:12px 0}.report-hint{font-size:12px;margin:8px 0;color:#35695f}
     @media(max-height:650px){.guide-card{padding:7px;line-height:1.5}.guide-grid{gap:6px;margin:6px 0}.guide-title{margin:4px 0}.guide-step{padding:5px 8px}.phase-note{margin:8px 0}}
@@ -408,14 +407,16 @@ if(typeof document!=='undefined')(() => {
   function reportMotor(ch){const m=practiceReport.motors[ch];return `<p class="report-foot">${ch} 电机 ${m.score} 分 · Kp ${m.pid.kp} / Ki ${m.pid.ki} / Kd ${m.pid.kd}</p>${waveSVG(m.data,ch)}<table class="practice-table"><thead><tr><th>指标</th><th>结果</th><th>满分目标</th><th>得分</th></tr></thead><tbody>${m.rows.map(r=>`<tr><td>${r.label}</td><td>${displayValue(r.value,r.unit)}</td><td>≤ ${r.good} ${r.unit}</td><td>${r.points.toFixed(1)} / ${r.weight}</td></tr>`).join('')}</tbody></table><p class="report-hint">优先处理：${m.guide.title} → 点击「调参指导」查看具体做法。</p>`;}
   function guideMotor(ch){const g=practiceReport.motors[ch].guide;return `<h3 class="guide-title">${ch} · ${g.title}</h3><div class="guide-step">本轮只试 ${g.key.toUpperCase()}：<b>${g.from} → ${g.to}</b>　另外两项保持不变</div><div class="guide-grid"><div class="guide-card"><b>① 依据：哪里没做好</b>${g.evidence}</div><div class="guide-card"><b>② 理解：可能为什么</b>${g.why}</div><div class="guide-card"><b>③ 操作：下一次怎么调</b>${g.action}</div><div class="guide-card"><b>④ 验证：调后看什么</b>${g.watch}</div></div><p class="report-foot">这是单变量尝试，不是已验证最优值。先保存对照 → 只改一项 → 重播 / 提交 → 比较；变差就回退并减半步长。</p>`;}
   function phaseMotor(ch){const m=practiceReport.motors[ch];return `<h3 class="guide-title">${ch} · 分段看，避免总分掩盖问题</h3><table class="practice-table"><thead><tr><th>阶段</th><th>末秒均速</th><th>平均偏差</th><th>稳定 / 恢复</th></tr></thead><tbody>${m.phases.map(p=>`<tr><td>${p.label}<br>${p.start}–${p.end} s</td><td>${p.meanSpeed.toFixed(1)} cps</td><td>${Math.abs(p.signedError).toFixed(1)} cps ${p.signedError>=0?'偏低':'偏高'}</td><td>${displayValue(p.recovery,'s')}</td></tr>`).join('')}</tbody></table><div class="phase-note"><p><b>起步：</b>先看能否达到 600 cps，再看是否反复越过目标。评分中的起步时间从斜坡完成的 1.1 秒开始算。</p><p><b>5 秒加载：</b>速度下跌正常。观察 PWM 是否增加、速度能否回到 570–630 cps 并保持；一直偏低时检查积分，输出到顶时先看饱和。</p><p><b>10 秒撤载：</b>原来的驱动力可能偏多，重点看冲高与回落。冲得高又恢复慢时，先用减小 Ki 的单变量实验判断。</p><p><b>末段摆动：</b>本轮三段末秒峰峰值为 ${m.phases.map(p=>p.ripple.toFixed(1)).join(' / ')} cps。它只描述这一秒的变化，不单独证明持续振荡。</p></div><p class="report-foot">评分用平均绝对误差；本表的平均偏差有方向，正负抵消时可能较小，两者含义不同。</p>`;}
-  function ruleText(){return `<p>固定题目：双轮 600 cps、30% PWM；5秒加负载、10秒撤载，共16秒。只调整两轮 PID。</p><p>误差取 4–5、9–10、15–16 秒真实模拟速度的平均绝对误差；超调取全程最大值。稳定须进入 ±5% 并保持至阶段末尾，至少持续 0.5 秒；起步从目标斜坡完成的 1.1 秒计时。恢复取加、撤载中较慢者。</p><p>每项从满分目标到零分界限线性扣分；未恢复该项为 0。零分界限：误差20%、超调30%、起步3.9秒、恢复5秒、饱和40%。总分为 A / B 平均；90优秀、75良好、60继续优化。</p><p>波形标记：红色为速度超过630 cps；黄色为三个末秒窗口偏差超过12 cps；紫色为起步斜坡完成或扰动1.5秒后仍超出570–630 cps的区间；粉色为PWM达到29.99%以上。底部色条保留重叠标记，悬停色带可看时段。标记是逐时刻提示，评分仍按原汇总规则计算。</p><p>仅评价本题教学模型，不代表真实电机性能。所有计算在浏览器本地完成，不上传作答。</p>`;}
+  function reportScope(){return practiceReport.channels.length===1?'单电机 '+practiceReport.channels[0]:'双电机 · 分别评分';}
+  function scoreSummary(){return practiceReport.channels.map(ch=>{const m=practiceReport.motors[ch];return `<div class="motor-score" data-score-motor="${ch}"><span>${ch} 电机 · ${m.grade}</span><strong>${m.score}<small> / 100</small></strong></div>`;}).join('');}
+  function ruleText(){return `<p>固定题目：${reportScope()}，各电机 600 cps、30% PWM；5秒加负载、10秒撤载，共16秒。各自调整 PID。</p><p>误差取 4–5、9–10、15–16 秒真实模拟速度的平均绝对误差；超调取全程最大值。稳定须进入 ±5% 并保持至阶段末尾，至少持续 0.5 秒；起步从目标斜坡完成的 1.1 秒计时。恢复取加、撤载中较慢者。</p><p>每项从满分目标到零分界限线性扣分；未恢复该项为 0。零分界限：误差20%、超调30%、起步3.9秒、恢复5秒、饱和40%。A / B 各自独立评分，不计算平均分；90优秀、75良好、60继续优化。</p><p>波形标记：红色为速度超过630 cps；黄色为三个末秒窗口偏差超过12 cps；紫色为起步斜坡完成或扰动1.5秒后仍超出570–630 cps的区间；粉色为PWM达到29.99%以上。底部色条保留重叠标记，悬停色带可看时段。标记是逐时刻提示，评分仍按原汇总规则计算。</p><p>仅评价本题教学模型，不代表真实电机性能。所有计算在浏览器本地完成，不上传作答。</p>`;}
   function downloadReport(){
-    const html=`<!doctype html><html lang="zh-CN"><meta charset="utf-8"><title>用于NEXUS电嵌电机学习 · 练习评估报告</title><style>body{max-width:900px;margin:32px auto;padding:20px;font:15px/1.6 system-ui;color:#1b3040}table{width:100%;border-collapse:collapse}td,th{text-align:left;padding:7px;border-bottom:1px solid #ddd}svg{width:100%;height:auto}h2{margin-top:28px}.report-foot{color:#586b79}p{margin:8px 0}.guide-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.guide-card{padding:12px;background:#f4f7f9}.guide-card b{display:block}.guide-step{padding:10px;background:#e9f5f1}.marker-legend{display:flex;gap:12px;font-size:12px}.marker-dot{display:inline-block;width:9px;height:9px;background:var(--mark);margin-right:4px}.motor-disclaimer{background:#fff8e8;padding:10px}</style><h1>用于NEXUS电嵌电机学习</h1><p class="motor-disclaimer">${motorDisclaimer}</p><h2>PID 自主练习 · 第 ${practiceReport.attempt} 次</h2><p>${practiceReport.date} · 总分 ${practiceReport.score} / 100 · ${practiceReport.grade}</p>${['A','B'].map(ch=>'<h2>电机 '+ch+'</h2>'+reportMotor(ch)+guideMotor(ch)+phaseMotor(ch)).join('')}<h2>评估规则</h2>${ruleText()}<h2>复现参数</h2><pre>${JSON.stringify(practiceReport.state,null,2)}</pre></html>`;
+    const html=`<!doctype html><html lang="zh-CN"><meta charset="utf-8"><title>用于NEXUS电嵌电机学习 · 练习评估报告</title><style>body{max-width:900px;margin:32px auto;padding:20px;font:15px/1.6 system-ui;color:#1b3040}table{width:100%;border-collapse:collapse}td,th{text-align:left;padding:7px;border-bottom:1px solid #ddd}svg{width:100%;height:auto}h2{margin-top:28px}.report-foot{color:#586b79}p{margin:8px 0}.guide-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.guide-card{padding:12px;background:#f4f7f9}.guide-card b{display:block}.guide-step{padding:10px;background:#e9f5f1}.marker-legend{display:flex;gap:12px;font-size:12px}.marker-dot{display:inline-block;width:9px;height:9px;background:var(--mark);margin-right:4px}.motor-disclaimer{background:#fff8e8;padding:10px}</style><h1>用于NEXUS电嵌电机学习</h1><p class="motor-disclaimer">${motorDisclaimer}</p><h2>PID 自主练习 · 第 ${practiceReport.attempt} 次</h2><p>${practiceReport.date} · ${reportScope()}</p><div class="report-summary">${scoreSummary()}</div><p></p>${practiceReport.channels.map(ch=>'<h2>电机 '+ch+'</h2>'+reportMotor(ch)+guideMotor(ch)+phaseMotor(ch)).join('')}<h2>评估规则</h2>${ruleText()}<h2>复现参数</h2><pre>${JSON.stringify({version:practiceReport.version,channels:practiceReport.channels,options:practiceReport.state.options,motors:Object.fromEntries(practiceReport.channels.map(ch=>[ch,practiceReport.state[ch]]))},null,2)}</pre></html>`;
     download(new Blob(['\ufeff',html],{type:'text/html;charset=utf-8'}),'PID_practice_'+practiceReport.attempt+'.html');
   }
   function showReport(){
-    report.innerHTML=`<div class="dialog-head"><h2>练习评估 · 第 ${practiceReport.attempt} 次</h2><button id="report-close" aria-label="关闭评估报告">关闭 ×</button></div><div class="report-summary"><strong>${practiceReport.score}<small> / 100</small></strong><span>${practiceReport.grade}<br>本次提交快照 · 双轮平均分</span></div><div class="report-nav"><button data-report-motor="A">A 电机</button><button data-report-motor="B">B 电机</button><span style="flex:1"></span><button data-report-view="score">成绩 / 波形</button><button data-report-view="guide">调参指导</button><button data-report-view="phases">分段诊断</button><button data-report-view="rules">评分规则</button></div><div id="report-content"></div><p class="motor-disclaimer">${motorDisclaimer}</p><div class="report-actions"><button id="report-download">下载 HTML 报告</button><button id="report-retry" class="primary">继续调参</button></div>`;
-    let ch='A',view='score';
+    report.innerHTML=`<div class="dialog-head"><h2>练习评估 · 第 ${practiceReport.attempt} 次</h2><button id="report-close" aria-label="关闭评估报告">关闭 ×</button></div><div class="report-summary">${scoreSummary()}</div><div class="report-nav">${practiceReport.channels.map(ch=>`<button data-report-motor="${ch}">${ch} 电机</button>`).join('')}<span style="flex:1"></span><button data-report-view="score">成绩 / 波形</button><button data-report-view="guide">调参指导</button><button data-report-view="phases">分段诊断</button><button data-report-view="rules">评分规则</button></div><div id="report-content"></div><p class="motor-disclaimer">${motorDisclaimer}</p><div class="report-actions"><button id="report-download">下载 HTML 报告</button><button id="report-retry" class="primary">继续调参</button></div>`;
+    let ch=practiceReport.channels.includes(selectedMotor)?selectedMotor:practiceReport.channels[0],view='score';
     const update=()=>{document.querySelectorAll('[data-report-motor]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.reportMotor===ch)));document.querySelectorAll('[data-report-view]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.reportView===view)));$('report-content').innerHTML=view==='guide'?guideMotor(ch):view==='phases'?phaseMotor(ch):view==='rules'?'<div class="practice-tips">'+ruleText()+'</div>':reportMotor(ch);};update();
     document.querySelectorAll('[data-report-motor]').forEach(b=>b.onclick=()=>{ch=b.dataset.reportMotor;update();});
     document.querySelectorAll('[data-report-view]').forEach(b=>b.onclick=()=>{view=b.dataset.reportView;update();});
@@ -431,13 +432,27 @@ if(typeof document!=='undefined')(() => {
     document.body.classList.toggle('practice',practiceActive);
     document.querySelectorAll('[data-channel]').forEach(i=>i.disabled=practiceActive&&!['kp','ki','kd'].includes(i.dataset.key));
     $('open-settings').disabled=practiceActive;
-    $('short-title').textContent=practiceActive?'练习：双轮稳速 + 抗扰动':['比例 P','积分 I','负载扰动','PWM 上限','积分饱和','微分 D'][lessonIndex];
+    $('short-title').textContent=practiceActive?'练习：'+(motorMode==='single'?selectedMotor+' 电机':'双电机')+'稳速 + 抗扰动':['比例 P','积分 I','负载扰动','PWM 上限','积分饱和','微分 D'][lessonIndex];
     syncControls();compute();if(practiceActive)$('play').click();
   };
   submit.onclick=()=>{
-    practiceReport=PracticeCore.evaluate(state);practiceReport.attempt=++practiceAttempt;practiceReport.date=new Date().toLocaleString('zh-CN');
-    series={A:practiceReport.motors.A.data,B:practiceReport.motors.B.data};playing=false;cancelAnimationFrame(animation);viewTime=16;hoverTime=null;render();showReport();
+    practiceReport=PracticeCore.evaluate(state,motorMode==='single'?[selectedMotor]:channels);practiceReport.attempt=++practiceAttempt;practiceReport.date=new Date().toLocaleString('zh-CN');
+    series={...series,...Object.fromEntries(practiceReport.channels.map(ch=>[ch,practiceReport.motors[ch].data]))};playing=false;cancelAnimationFrame(animation);viewTime=16;hoverTime=null;render();showReport();
   };
+
+  const modeSelect=document.createElement('select');modeSelect.id='motor-mode';modeSelect.setAttribute('aria-label','单电机或双电机');modeSelect.innerHTML='<option value="dual">双电机</option><option value="single">单电机</option>';document.querySelector('.desk-side .desk-tabs strong').replaceWith(modeSelect);
+  const modeStyle=document.createElement('style');modeStyle.textContent='#motor-mode{font-size:12px;padding:4px 5px;min-width:0}body[data-motor-mode=single] .motor-stage{grid-template-columns:1fr auto}body[data-motor-mode=single] #copy-ab{display:none}@media(max-width:520px){body[data-motor-mode=single] .motor-stage{grid-template-rows:1fr}body[data-motor-mode=single] .motor-actions{grid-column:auto;flex-direction:column}}';document.head.append(modeStyle);
+  function refreshMotorMode(){
+    document.body.dataset.motorMode=motorMode;
+    channels.forEach(ch=>{$('motor-'+ch).style.display=motorMode==='single'&&ch!==selectedMotor?'none':'';});
+    $('motor-stage').setAttribute('aria-label',motorMode==='single'?selectedMotor+' 单电机转速动画':'双电机转速动画');
+    document.querySelector('.motor-actions small').innerHTML=(motorMode==='single'?selectedMotor+' 电机加载':'双轮同步加载')+'<br>示意：600 cps = 1圈/s';
+    $('toggle-load').title=motorMode==='single'?'仅给选中电机加/撤负载；切换电机后重新模拟':'播放中加/撤双轮负载';
+    if(practiceActive)$('short-title').textContent='练习：'+(motorMode==='single'?selectedMotor+' 电机':'双电机')+'稳速 + 抗扰动';
+  }
+  modeSelect.onchange=()=>{motorMode=modeSelect.value;refreshMotorMode();compute();};
+  document.querySelectorAll('[data-motor]').forEach(b=>b.addEventListener('click',()=>{refreshMotorMode();if(motorMode==='single')compute();}));
+  refreshMotorMode();
 
 
 
