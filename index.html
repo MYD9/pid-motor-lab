@@ -1,0 +1,387 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>双电机 PID 实验室 · 离线教学</title>
+<style>
+:root{color-scheme:light;--ink:#1b3040;--muted:#586b79;--paper:#f3f6f8;--line:#dbe4e9;--blue:#146dc1;--teal:#009383;--gold:#ce7d00;--purple:#8c53b4;--red:#c13b40}*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.65 system-ui,-apple-system,"Segoe UI","Microsoft YaHei",sans-serif}main{max-width:1500px;margin:auto;padding:32px 34px 64px}h1,h2,h3,p{margin:0}h1{font-size:clamp(28px,3vw,42px);line-height:1.3;letter-spacing:-.04em;margin:12px 0}h2{font-size:22px;line-height:1.4}h3{font-size:17px}button,input,select{font:inherit}button,select{border:1px solid #c7d5df;border-radius:8px;background:#fff;color:var(--ink);padding:8px 13px}button{cursor:pointer;font-weight:600;transition:background .12s}button:hover{background:#eaf2f8}button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:3px solid #73b1ef;outline-offset:2px}button.primary{background:#1365a5;color:#fff;border-color:#1365a5}button.primary:hover{background:#0e548e}.eyebrow{font-size:12px;letter-spacing:.15em;font-weight:750;color:var(--blue)}.muted,.note{color:var(--muted)}.note{font-size:13px}.notice{display:flex;gap:12px;align-items:flex-start;padding:13px 16px;border:1px solid #acd4ca;border-radius:10px;background:#eaf7f2;margin:20px 0;color:#265b4e}.notice strong{white-space:nowrap}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}.card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:20px;box-shadow:0 3px 12px #17324c04}.section{margin-top:24px}.section-title{display:flex;align-items:baseline;justify-content:space-between;gap:18px;margin-bottom:12px}.toolbar{display:flex;flex-wrap:wrap;gap:9px;align-items:center}.presets{gap:7px}.presets button{font-size:13px;padding:7px 10px}.presets button[aria-pressed=true]{background:#e8f3ff;border-color:#408bcc;color:#115b97}.preset-note{margin-top:12px;min-height:24px}.channel-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}.motor-id{display:inline-flex;width:32px;height:32px;border-radius:8px;align-items:center;justify-content:center;background:#e8f2fb;color:var(--blue);margin-right:9px}.channel-b .motor-id{color:var(--teal);background:#e4f5ef}.control-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px 20px}.control label{display:flex;justify-content:space-between;gap:8px;font-size:13px;font-weight:650;margin-bottom:5px}.unit{font-size:11px;color:var(--muted);font-weight:400}.input-pair{display:flex;align-items:center;gap:10px}.input-pair input[type=number]{width:89px;padding:5px 7px;min-width:0;border:1px solid #c9d6de;border-radius:6px;color:var(--ink);background:#f9fbfc}.input-pair input[type=range]{width:100%;min-width:35px;accent-color:var(--blue)}.channel-b input[type=range]{accent-color:var(--teal)}details{border-top:1px solid var(--line);margin-top:16px;padding-top:12px}summary{cursor:pointer;color:var(--muted);font-size:13px}.plant-fields{margin-top:14px}.provenance{padding:9px 10px;background:#f5f7f9;border-radius:7px;font-size:12px;margin-top:12px;color:var(--muted)}.options{display:flex;flex-wrap:wrap;gap:9px 22px;margin-top:15px}.options label{display:flex;gap:7px;align-items:center;font-size:13px}.options input{accent-color:var(--blue)}.playback{display:flex;flex-wrap:wrap;align-items:center;gap:12px}.playback .timebar{flex:1;min-width:160px;accent-color:var(--blue)}.time-label{font-variant-numeric:tabular-nums;min-width:100px}.legend{display:flex;gap:15px;flex-wrap:wrap;margin:7px 0 8px;font-size:12px;color:var(--muted)}.legend span:before{content:"";display:inline-block;vertical-align:middle;width:15px;height:3px;background:var(--swatch);margin-right:5px}.canvas-wrap{position:relative}canvas{display:block;width:100%;height:240px;touch-action:pan-y}.small-plot{height:130px}.terms-plot{height:160px}.chart-meta{font-size:12px;color:var(--muted);min-height:20px;font-variant-numeric:tabular-nums}.metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:12px}.metric{background:#f4f7f9;border-radius:8px;padding:10px}.metric strong{display:block;font-size:19px;font-variant-numeric:tabular-nums;line-height:1.5}.metric span{font-size:11px;color:var(--muted)}.limit-note{font-size:12px;min-height:24px;margin-top:10px;color:#99630c}.download{font-size:12px;padding:5px 10px}.explain{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}.explain b{display:block;margin-bottom:6px}.explain p{font-size:13px;color:var(--muted)}.formula{background:#eef3f7;border-radius:8px;padding:13px;margin-top:14px;font:14px/1.8 ui-monospace,Consolas,monospace;overflow-x:auto}.steps{margin:12px 0 0;padding-left:22px;font-size:14px}.steps li{padding-bottom:5px}.footnote{margin-top:18px;font-size:12px;color:var(--muted)}.status{font-size:13px;color:var(--teal)}.tag{font-size:12px;background:#f2f5f8;padding:4px 8px;border-radius:5px;color:var(--muted)}@media(max-width:1000px){main{padding:22px 18px 44px}.control-grid{column-gap:10px}.input-pair{gap:6px}.input-pair input[type=number]{width:74px}.metrics{gap:5px}.metric{padding:8px}.metric strong{font-size:17px}}@media(max-width:760px){.grid,.explain{grid-template-columns:1fr}.card{padding:16px}.notice{display:block}.notice strong{display:block;margin-bottom:4px}.section-title{display:block}.section-title .note{margin-top:6px}.channel-head .tag{max-width:140px;font-size:11px}.options{gap:10px}.toolbar button{flex-grow:1}.playback button{flex-grow:1}canvas{height:240px}}@media print{body{background:white}main{padding:0}.controls-section,.preset-section,.playback-section,button,.download{display:none}.card{box-shadow:none;break-inside:avoid}.grid{grid-template-columns:1fr}details{display:none}}
+
+.lesson{background:linear-gradient(125deg,#102f45,#17545d);color:white;padding:26px;border-radius:18px;margin:22px 0}.lesson h2{color:white;margin:14px 0 8px}.lesson p{max-width:850px;color:#d5e8ed}.lesson-nav{display:flex;flex-wrap:wrap;gap:7px}.lesson-nav button{background:#ffffff12;color:white;border-color:#ffffff40;font-size:13px}.lesson-nav button[aria-pressed=true]{background:#d5f4cf;color:#163e37;border-color:#d5f4cf}.lesson-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}.lesson-actions button{min-height:44px}.prompt{border-left:3px solid #a9d98d;padding-left:14px;margin:14px 0}.teach-toolbar{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin:16px 0}.teach-toolbar label{margin-left:auto}.reading{background:#edf6f5;border-radius:12px;padding:18px;margin-top:14px}.reading h3{margin-bottom:8px}.reading p{font-size:14px}.live-bars{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:12px}.live-bars meter{width:100%;height:16px}.live-bars b{display:block}.lesson-status{color:#d5f4cf!important;margin-top:12px}.comparison{border:1px dashed #93a5b3;padding:12px;border-radius:8px;margin-top:12px;font-size:13px}.beginner .advanced-condition,.beginner .control:has([data-key=accel]),.beginner .plant-fields{display:none}.beginner .preset-section{display:none}.concept-strip{display:flex;flex-wrap:wrap;gap:10px;margin:14px 0}.concept-strip span{background:white;border:1px solid var(--line);padding:8px 12px;border-radius:8px}.metric span{font-size:12px}.lesson-index{font-size:12px;letter-spacing:.1em;color:#c8e4db}button:disabled{opacity:.55;cursor:default}@media(max-width:760px){.lesson{padding:19px}.live-bars{grid-template-columns:1fr}.teach-toolbar label{margin-left:0}.lesson-nav button{flex:1 1 28%}}@media print{.lesson-actions,.teach-toolbar{display:none}}
+
+/* Compact teaching workbench: controls and charts share one viewport. */
+html,body{height:100%;overflow:hidden}body{font-size:14px}body>main{display:none}#desk{height:100dvh;max-width:none;padding:14px 20px;display:grid;grid-template-rows:42px 90px minmax(0,1fr) 48px;gap:12px;margin:0}#desk h1{font-size:22px;margin:0;letter-spacing:0}#desk h2{font-size:17px;margin:0}.desk-head{display:flex;justify-content:space-between;align-items:center}.desk-head small{color:var(--muted);margin-left:12px;font-size:12px}.desk-head button{padding:5px 12px}.desk-lesson{display:grid;grid-template-columns:1fr auto;align-content:center;gap:9px 18px;background:#153e4d;color:white;padding:12px 18px;border-radius:12px}.desk-lesson .lesson-nav{grid-column:1/-1}.desk-lesson .lesson-nav button{padding:5px 13px}.desk-hint{display:flex;gap:12px;align-items:center;min-width:0}.desk-hint p{color:#d7e9eb;font-size:13px}.desk-lesson .lesson-actions{margin:0;gap:6px}.desk-lesson .lesson-actions button{padding:5px 10px;min-height:32px;font-size:13px}.desk-body{display:grid;grid-template-columns:260px minmax(0,1fr);gap:12px;min-height:0}.desk-side,.desk-charts{background:white;border:1px solid var(--line);border-radius:12px;padding:14px;min-height:0}.desk-side{display:flex;flex-direction:column;gap:10px}.desk-side h3{font-size:14px}.desk-tabs{display:flex;gap:6px;align-items:center;flex-wrap:wrap}.desk-tabs button{padding:5px 12px;font-size:13px}.desk-tabs button[aria-pressed=true]{background:#e6f3f1;border-color:#329e8d;color:#096c5b}.desk-side #controllers{display:block;flex:1;min-height:0}.desk-side #controllers article{border:0;padding:0;box-shadow:none}.desk-side #controllers article .channel-head,.desk-side #controllers details,.desk-side .unit{display:none}.desk-side .control-grid{grid-template-columns:1fr;gap:clamp(6px,1.5vh,14px)}.desk-side .control:has([data-key=accel]){display:none}.desk-side .control label{font-size:13px;margin:0 0 3px}.desk-side .input-pair input[type=number]{width:80px;padding:3px 6px}.desk-side .side-note{font-size:12px;color:var(--muted);line-height:1.5}.desk-side .side-actions{display:flex;gap:6px}.desk-side .side-actions button{padding:5px 8px;font-size:12px;flex:1}.desk-charts{display:grid;grid-template-rows:32px minmax(0,1fr) 26px;gap:7px}.chart-top{display:flex;align-items:center;justify-content:space-between;gap:10px}.chart-top .legend{margin:0;font-size:11px;gap:10px}.desk-charts #plots{display:block;min-height:0}.desk-charts #plots>article{height:100%;display:grid;grid-template-rows:minmax(0,1fr) 22px 62px;gap:5px;padding:0;border:0;box-shadow:none}.desk-charts #plots .channel-head,.desk-charts #plots .legend,.desk-charts #plots .limit-note,.desk-charts #plots [data-csv]{display:none}.desk-charts .canvas-wrap{min-height:0}.desk-charts canvas{height:100%;min-height:0}.desk-charts .metrics{margin:0;gap:8px;grid-row:3}.desk-charts .metric{padding:6px 12px}.desk-charts .metric strong{font-size:20px}.desk-charts .chart-meta{font-size:12px;grid-row:2}.desk-charts #plots details{display:contents}.desk-charts #plots summary,.desk-charts #plots details p{display:none}.desk-charts .small-plot,.desk-charts .terms-plot{grid-row:1}.desk-charts[data-plot=speed] .small-plot,.desk-charts[data-plot=speed] .terms-plot,.desk-charts[data-plot=pwm] .canvas-wrap,.desk-charts[data-plot=pwm] .terms-plot,.desk-charts[data-plot=terms] .canvas-wrap,.desk-charts[data-plot=terms] .small-plot{display:none}.desk-charts #compact-story{font-size:12px;color:#35695f;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.desk-footer{display:flex;gap:10px;align-items:center;background:#fff;border:1px solid var(--line);border-radius:10px;padding:7px 12px}.desk-footer button{font-size:13px;padding:5px 12px}.desk-footer #timebar{flex:1;min-width:60px;accent-color:#098b7c}.desk-footer .time-label{font-size:12px;min-width:82px}.desk-footer select{padding:3px}.desk-footer #sim-status{display:none}.motor-hidden{display:none!important}dialog{width:min(760px,92vw);max-height:85dvh;overflow:auto;border:1px solid var(--line);border-radius:16px;padding:22px;color:var(--ink);box-shadow:0 20px 80px #18314240}dialog::backdrop{background:#0d223a80}.dialog-head{display:flex;justify-content:space-between;align-items:center;position:sticky;top:-22px;background:white;padding:10px 0;z-index:1}dialog .section{margin-top:16px}dialog .advanced-condition{display:flex!important}dialog .plant-fields{display:grid!important}dialog .control-grid{grid-template-columns:repeat(2,minmax(0,1fr))}dialog .explain{grid-template-columns:1fr}dialog #comparison-summary{display:block;white-space:normal}#desk .lesson-actions #lesson-play,#desk .lesson-actions #lesson-next{display:none}@media(max-height:650px){#desk{padding:8px 12px;grid-template-rows:32px 80px minmax(0,1fr) 40px;gap:7px}.desk-side,.desk-charts{padding:10px}.desk-side{gap:6px}.desk-side .control-grid{gap:5px}.desk-side .side-note{display:none}.desk-charts .metric strong{font-size:17px}.desk-charts #plots>article{grid-template-rows:minmax(0,1fr) 18px 50px}.desk-charts .metrics span{font-size:10px}}
+@media(max-width:800px){#desk{padding:8px;grid-template-rows:36px 105px minmax(0,1fr) 42px;gap:8px}.desk-head small{display:none}.desk-body{grid-template-columns:210px minmax(0,1fr);gap:8px}.desk-lesson{padding:9px;gap:6px}.desk-hint p{display:none}.desk-lesson .lesson-nav button{padding:4px 8px}.chart-top .legend{display:none}.desk-tabs button{padding:4px 8px}.desk-charts .metric{padding:5px}.desk-charts .metric strong{font-size:16px}.desk-footer #show-all{display:none}.desk-side .input-pair{gap:4px}.desk-charts .chart-meta{font-size:10px}}
+@media(max-width:520px){#desk{grid-template-rows:32px 100px minmax(0,1fr) 42px}.desk-body{grid-template-columns:145px minmax(0,1fr)}.desk-side,.desk-charts{padding:7px}.desk-side .input-pair{flex-wrap:wrap}.desk-side .input-pair input[type=range]{flex-basis:100%;height:12px}.desk-side .input-pair input[type=number]{width:100%;padding:1px 5px}.desk-side .side-actions{flex-wrap:wrap}.desk-side .side-note{display:none}.desk-side .control-grid{gap:5px}.desk-lesson h2{font-size:13px}.desk-lesson .lesson-actions button{font-size:11px;padding:4px 6px}.desk-charts .metrics{gap:2px}.desk-charts .metric strong{font-size:13px}.desk-charts .metric span{font-size:9px}.desk-charts #plots>article{grid-template-rows:minmax(0,1fr) 30px 65px}.desk-charts .chart-meta{line-height:1.2}.desk-footer{gap:5px;padding:5px}.desk-footer button{font-size:11px;padding:4px 6px}.desk-footer .time-label{min-width:52px;font-size:10px}.desk-footer select{max-width:47px}.desk-charts #compact-story{font-size:10px}.desk-head h1{font-size:18px}}
+.desk-side .input-pair input[type=number]{flex:0 0 80px}.desk-side input[type=number]{appearance:textfield}.desk-side input::-webkit-inner-spin-button{appearance:none}@media(max-width:520px){.desk-side .input-pair input[type=number]{flex-basis:100%}}
+@media (max-height:650px) and (min-width:521px){.desk-side .control{height:43px}.desk-side .control label{font-size:12px;line-height:16px;margin:0}.desk-side .input-pair{height:26px}.desk-side .input-pair input[type=number]{height:24px;font-size:12px;padding:1px 5px}.desk-side input[type=range]{height:16px;margin:0}.desk-side .control-grid{gap:5px}}
+
+.desk-charts{grid-template-rows:114px 32px minmax(0,1fr) 22px}.motor-stage{display:grid;grid-template-columns:1fr 1fr auto;gap:10px;border-bottom:1px solid var(--line);padding-bottom:8px;min-height:0}.motor-view{display:flex;align-items:center;gap:12px;min-width:0;border-radius:10px;background:#f1f7fa;padding:8px}.motor-view[data-loaded=true]{background:#fff1e5}.motor-view svg{width:74px;height:74px;flex-shrink:0;overflow:visible}.motor-view .rotor{transform-origin:50px 50px}.motor-view .brake{opacity:0}.motor-view[data-loaded=true] .brake{opacity:1}.motor-read{min-width:0;line-height:1.4}.motor-read strong{font-size:20px;display:block;font-variant-numeric:tabular-nums}.motor-read small{font-size:11px;color:var(--muted)}.load-badge{color:#b85810;font-size:11px;display:block}.motor-actions{display:flex;flex-direction:column;justify-content:center;gap:6px}.motor-actions button{font-size:12px;padding:6px 10px}.motor-actions small{font-size:10px;color:var(--muted);max-width:110px;line-height:1.4}.motor-speed-meter{width:100%;height:8px;display:block}.desk-charts .metrics strong{font-size:18px}@media(max-height:650px){.desk-charts{grid-template-rows:82px 28px minmax(0,1fr) 18px;gap:4px}.motor-view{padding:4px;gap:6px}.motor-view svg{width:52px;height:52px}.motor-read strong{font-size:16px}.motor-actions button{padding:4px 6px}.motor-actions small{font-size:9px}.desk-charts #plots>article{grid-template-rows:minmax(0,1fr) 18px 45px}.desk-charts .metric strong{font-size:15px}}
+@media(max-width:800px){.motor-stage{gap:5px}.motor-view{gap:5px;padding:4px}.motor-view svg{width:48px;height:48px}.motor-read strong{font-size:15px}.motor-read small{font-size:10px}.motor-actions small{max-width:75px}.motor-actions button{font-size:10px;padding:4px}.motor-read{font-size:12px}}@media(max-width:520px){.desk-charts{grid-template-rows:148px 28px minmax(0,1fr) 20px}.motor-stage{grid-template-columns:1fr 1fr;grid-template-rows:98px 38px}.motor-view{display:flex;flex-direction:column;gap:0;padding:3px}.motor-view svg{width:40px;height:40px}.motor-read{width:100%;font-size:10px;text-align:center}.motor-read strong{font-size:12px}.motor-read small{display:none}.motor-actions{grid-column:1/-1;flex-direction:row;align-items:center}.motor-actions small{font-size:8px;max-width:85px}.load-badge{font-size:9px}.motor-speed-meter{display:none}}
+</style>
+</head>
+<body class="beginner"><main>
+<header><div class="eyebrow">MG513P · TWO MOTOR CONTROL LAB</div><h1>让 PID 的作用，看得见。</h1><p class="muted">给两个电机相同的任务，改变参数，比较它们如何起步、追上目标与抵抗负载。</p></header>
+<div class="notice"><strong>离线模拟，不连接串口、不启动电机</strong><span>所有曲线由浏览器计算。<span id="model-status">默认模型由本车闭环数据拟合，为教学近似。</span>这里的模拟结果不能直接作为实车验收结果。</span></div>
+
+<section class="lesson" aria-labelledby="lesson-title"><div class="lesson-index">PID 入门 · 先预测，再实验，最后解释</div><nav class="lesson-nav" id="lesson-nav" aria-label="选择教学实验"></nav><h2 id="lesson-title"></h2><p id="lesson-goal"></p><div class="prompt"><strong>先想一想</strong><p id="lesson-question"></p></div><div class="lesson-actions"><button id="lesson-play">▶ 播放本次曲线</button><button id="lesson-reset">① 载入本课起点</button><button id="lesson-change">② 改一个条件，对比</button><button id="lesson-next">下一课 →</button></div><p class="lesson-status" id="lesson-status" role="status"></p></section>
+<div class="concept-strip"><span>目标速度：你希望电机多快</span><span>实际速度：模型中电机有多快</span><span>误差 = 目标 − 测速</span><span>PWM：电机用力的大小</span></div>
+<div class="teach-toolbar"><button id="save-baseline">保存当前曲线作对照</button><button id="clear-baseline">清除对照</button><span id="baseline-label" class="note">灰色虚线用于显示之前的曲线</span><label><input id="advanced-mode" type="checkbox">自由探索 / 高级选项</label></div>
+<section class="reading" aria-label="实时读图"><h3>把曲线翻译成一句话 · 电机 A</h3><p id="instant-story" role="status"></p><div class="live-bars"><div>目标速度<b id="live-target"></b><meter id="target-meter" min="0" max="1500"></meter></div><div>模型实际速度<b id="live-actual"></b><meter id="actual-meter" min="0" max="1500"></meter></div><div>输出用了多少上限<b id="live-effort"></b><meter id="effort-meter" min="0" max="100"></meter></div></div><p class="note">cps = 编码器每秒计数，数值越大速度越快；这里的进度条表示速度大小，正负号表示方向。它不是转/分钟。</p><div class="comparison" id="comparison-summary"></div></section><section class="card preset-section"><div class="section-title"><h2>从一个现象开始</h2><span class="note">点击预设后，再一次只改一个参数。</span></div><div class="toolbar presets" id="presets"></div><p class="preset-note" id="preset-note"></p></section>
+<section class="card section playback-section"><div class="playback"><button class="primary" id="play">播放仿真</button><button id="pause">暂停 / 继续</button><button id="show-all">显示完整曲线</button><label class="note">播放速度 <select id="play-speed" aria-label="播放速度"><option value="0.3">0.3×</option><option value="0.5">0.5×</option><option value="0.8">0.8×</option><option value="1" selected>1×</option><option value="2">2×</option><option value="4">4×</option></select></label><input class="timebar" type="range" id="timebar" min="0" max="16" step="0.01" value="16" aria-label="查看模拟时刻"><span class="time-label" id="time-label">16.00 / 16 s</span><span class="status" id="sim-status" role="status">完整模拟已计算</span></div></section>
+<section class="section"><div class="section-title"><h2>波形与结果</h2><span class="note">两通道使用相同坐标范围 · 指针移到曲线上可查看数值</span></div><div class="grid" id="plots"></div><p class="footnote">指标取第一次目标段：从 0.5 s 开始，到加负载 / 目标减半之前；未启用扰动时到 16 s。稳态误差用该段最后 1 s 的模型真实速度均值计算；调节时间从内部目标到达请求值时计，要求此后始终在 ±5%（最少 ±5 counts/s）内。“未稳定”也可能表示观察时间不足。</p></section>
+<section class="section controls-section"><div class="section-title"><h2>两台电机，各自调节</h2><div class="toolbar"><button id="copy-ab" class="download">复制 A 的控制参数到 B</button><button id="restore" class="download">恢复教学初值</button></div></div><div class="grid" id="controllers"></div>
+<div class="card section"><div class="section-title"><h3>共同实验条件</h3><span class="tag">控制周期 10 ms · 测速低通 50 ms</span></div><div class="options advanced-condition"><label><input type="checkbox" id="antiwindup" checked>抗积分饱和</label><label><input type="checkbox" id="slew" checked>PWM 斜率限制 30%/s</label><label><input type="checkbox" id="ramp" checked>应用目标加速度限幅（数值见各通道）</label><label><input type="checkbox" id="quantized" checked>整数编码器计数</label><label><input type="checkbox" id="load">7 s 加入负载（等效减去 4% 驱动）</label><label><input type="checkbox" id="stepdown">8 s 目标减半</label></div><p class="note" style="margin-top:12px">取消保护选项仅用于教学对照。模型保留单向速度控制：目标为正时不输出反转制动力，目标为 0 时 PWM 立即归零。实车还有限时、心跳、编码器与超速停机，此页没有模拟这些故障状态。</p></div></section>
+<section class="card section"><div class="section-title"><h2>怎样读懂这次实验</h2><span class="note">先看速度，再看控制器为了追速做了什么。</span></div><div class="explain"><div><b style="color:var(--blue)">P：此刻差多少，就推多大</b><p>比例增益增加，纠错通常更快；但测速滤波、惯性和输出限制会带来滞后。比例过强可能让速度和 PWM 来回摆动。只有 P 时，为维持转速所需的驱动力通常对应一个非零误差。</p></div><div><b style="color:var(--teal)">I：把持续的小误差记下来</b><p>积分能补足稳态所需的输出，减小持续误差。若输出已经到上限仍不断累积，目标下降后还会“推得太多”。抗积分饱和只接受当前限幅与斜率范围内可实现的那部分积分增量。</p></div><div><b style="color:var(--purple)">D：根据测速变化提前收力</b><p>这里采用测量微分，不对目标突变求微分。D 能增加阻尼，也会放大测速量化的变化；先把 PI 调到可用，再判断是否需要很小的 D。</p></div></div><div class="formula">误差 e = 内部目标 − 滤波测速<br>u = Kp × e + I − Kd × Δ测速 / 0.01 s<br>I 候选 = I + Ki × e × 0.01 s → 抗饱和判定 → 单向限幅 → PWM 斜率限制</div>
+<ol class="steps"><li>先选择“只有 P”，记下稳态误差，逐渐增加 Kp，比较速度与 PWM 的摆动。</li><li>选择“实测 PI 起点”，观察积分如何补足输出；把 Ki 增大，观察超调与恢复时间。</li><li>选择“积分累积”，在 8 s 降低目标；勾选 / 取消抗积分饱和，比较目标下降后的恢复。</li><li>启用负载，比较相同 PID 下 A / B 的差异。再分别调参，说明相同型号不一定需要完全相同参数。</li><li>选择“D 与量化”，展开 PID 分量曲线；切换整数编码器，观察微分项对测量分辨率的敏感性。</li></ol>
+<details><summary>模型、单位与适用边界</summary><p class="note" style="margin-top:10px">速度单位是编码器 x4 counts/s，未将假定每圈计数换算为 rpm。电机采用一阶速度模型：τ × dv/dt = K × sign(u) × max(|u| − 死区 − 负载, 0) − v；使用每个 10 ms 区间的解析更新并积分位移，再取整模拟编码器。摩擦被简化成对称死区，未模拟电流、电池压降、齿隙、静摩擦滞回、双轮机械耦合与倒立摆。滤波、PID 抗饱和、斜率限制对应本项目控制算法思路；JavaScript 浮点、理想固定周期和简化电机模型不能替代固件或硬件验证。每通道“模型参数”可以独立修改；默认值来源于正向 300 / 600 / 1000、反向 600 和 P-only 600 counts/s 的闭环记录，重复 1000 counts/s 试验完全留出用于验证。约 50 ms 的遥测采样限制了动态辨识精度；本模型的稳态跟踪精度不代表其瞬态或反向响应达到相同精度。</p></details>
+</section><footer class="footnote">可离线保存和分发这个单文件。页面不加载外部脚本、字体或数据；导出的 CSV 与 PNG 均标记为模拟数据。</footer>
+<details class="card section"><summary>实测来源与模型边界（教师参考）</summary><section class="card section" style="margin-bottom:24px"><div class="section-title"><h2>实机参考：把模型与证据分开看</h2><span class="note">教学参数参考；原始硬件记录不随本站发布。</span></div><p class="note">本车两通道实测 PI：<strong>Kp = 0.03，Ki = 0.08，Kd = 0</strong>。下表是架空试验末段的滤波测速均值摘录，单位 x4 counts/s；下方交互图全部为模拟。</p><div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;margin:12px 0;text-align:left"><thead><tr><th>目标</th><th>A 实测末段均速</th><th>B 实测末段均速</th></tr></thead><tbody><tr><td>300</td><td>298.70</td><td>298.27</td></tr><tr><td>600</td><td>601.06</td><td>601.17</td></tr><tr><td>1000（重复验证）</td><td>999.98</td><td>1000.51</td></tr></tbody></table></div><p class="note">300 counts/s 试验的 A 起动超调约 30.5%，低速起转仍受静摩擦影响。模型的等效运动死区约 2.4% / 2.6%，是已转动工况外推的截距，<strong>不等于起转阈值</strong>。本次短试验在不同初态出现了不同起转行为，不能据此指定单一精确门槛；模型未包含静摩擦与起转滞回，所以不能准确复现起步或低速爬行。</p><p class="note" style="margin-top:8px">重复 1000 counts/s 留出试验的模型预测误差：A RMSE 66.81、B RMSE 54.27 counts/s（计数差分区间速度）。它与上表的闭环末段误差不是同一指标。B 的方向不对称也没有建模。<a href="model_fit.json" style="color:var(--blue)">查看拟合来源与误差明细</a>。</p></section></details></main>
+<script>
+'use strict';
+// Replace only this structure after identification; keep the measurement provenance explicit.
+const MODEL_DEFAULTS = {
+  "A": {
+    "gain": 98.05840828475944,
+    "deadzone": 2.43103334,
+    "tau": 0.2748678456496658,
+    "provenance": "本车闭环实测拟合的教学近似；重复 1000 cps 留出验证，详见 model_fit.json",
+    "holdoutRmse": 66.80664502286758
+  },
+  "B": {
+    "gain": 94.3942079410967,
+    "deadzone": 2.6237544899999996,
+    "tau": 0.22533845572874747,
+    "provenance": "本车闭环实测拟合的教学近似；重复 1000 cps 留出验证，详见 model_fit.json",
+    "holdoutRmse": 54.27197615084959
+  }
+};
+const LabCore = (() => {
+  const DT=0.01, END=16, START=0.5;
+  const clamp=(x,lo,hi)=>Math.min(hi,Math.max(lo,x));
+  const approach=(x,to,amount)=>x+clamp(to-x,-amount,amount);
+  const defaults=()=>({A:{kp:0.03,ki:0.08,kd:0,target:600,cap:30,accel:1000,...MODEL_DEFAULTS.A},B:{kp:0.03,ki:0.08,kd:0,target:600,cap:30,accel:1000,...MODEL_DEFAULTS.B},options:{antiwindup:true,slew:true,ramp:true,quantized:true,load:false,stepdown:false}});
+  function simulate(p,opt){
+    let actual=0,position=0,previousCount=0,measured=0,previousMeasured=0,integral=0,output=0,target=0;
+    const data=[];
+    for(let n=0;n<=Math.round(END/DT);n++){
+      const t=n*DT,request=t<START?0:p.target*(opt.stepdown&&t>=8?0.5:1);
+      const count=Math.trunc(position), raw=opt.quantized?(count-previousCount)/DT:actual;
+      previousCount=count;
+      measured+=DT/(0.05+DT)*(raw-measured);
+      target=opt.ramp?approach(target,request,p.accel*DT):request;
+      let proportional=0,derivative=0,desired=0;
+      if(request===0){output=0;integral=0;previousMeasured=measured;}
+      else{
+        const error=target-measured;
+        proportional=p.kp*error;
+        derivative=-p.kd*(measured-previousMeasured)/DT;
+        const candidate=clamp(integral+p.ki*error*DT,-p.cap,p.cap);
+        const lo=request>0?0:-p.cap,hi=request>0?p.cap:0;
+        const low=opt.slew?Math.max(lo,output-30*DT):lo;
+        const high=opt.slew?Math.min(hi,output+30*DT):hi;
+        const pd=proportional+derivative;
+        // Match control.c: accept the reachable part of the integral step.
+        // Include the previous integral so a P/D change cannot force an opposite jump.
+        integral=opt.antiwindup?clamp(candidate,Math.min(integral,low-pd),Math.max(integral,high-pd)):candidate;
+        desired=clamp(proportional+integral+derivative,lo,hi);
+        output=opt.slew?clamp(approach(output,desired,30*DT),-p.cap,p.cap):desired;
+        previousMeasured=measured;
+      }
+      let load=opt.load&&t>=7?4:0;
+      if(Array.isArray(opt.loadEvents)){load=0;for(const e of opt.loadEvents)if(t+1e-9>=e.t)load=e.value;}
+      data.push({t,request,target,actual,raw,measured,output,p:proportional,i:integral,d:derivative,position,load});
+      const equilibrium=p.gain*Math.sign(output)*Math.max(0,Math.abs(output)-p.deadzone-load);
+      const decay=Math.exp(-DT/p.tau);
+      position+=equilibrium*DT+(actual-equilibrium)*p.tau*(1-decay);
+      actual=equilibrium+(actual-equilibrium)*decay;
+    }
+    return data;
+  }
+  function metrics(data,p,opt){
+    const end=Math.max(START+DT,Math.min(Array.isArray(opt.loadEvents)?(opt.loadEvents.find(e=>e.value>0)?.t??END):(opt.load?7:END),opt.stepdown?8:END));
+    const phase=data.filter(r=>r.t>=START&&r.t<end), tail=phase.filter(r=>r.t>=end-1);
+    const mean=tail.reduce((v,r)=>v+r.actual,0)/tail.length;
+    const sign=Math.sign(p.target)||1,absolute=Math.abs(p.target);
+    const peak=Math.max(...phase.map(r=>r.actual*sign));
+    const overshoot=absolute>0?Math.max(0,peak-absolute)/absolute*100:null;
+    const ready=opt.ramp?START+absolute/p.accel:START;
+    const tolerance=Math.max(absolute*.05,5);
+    let lastBad=-1;
+    for(let i=0;i<phase.length;i++)if(Math.abs(phase[i].actual-p.target)>tolerance)lastBad=i;
+    const settleAt=Math.max(ready,lastBad>=0?phase[lastBad].t+DT:ready);
+    const settled=settleAt<=end-0.5?Math.max(0,settleAt-ready):null;
+    return {error:p.target-mean,overshoot,settled,end,ready,maxPossible:p.gain*Math.max(0,p.cap-p.deadzone)};
+  }
+  const presets=[
+    {id:'p',label:'① 只有 P',pid:[0.03,0,0],note:'保持实测 Kp=0.03，去掉积分。P 需要误差才能产生驱动力：即使曲线平稳，速度仍可能低于 600 counts/s。'},
+    {id:'pi',label:'② 实测 PI 起点',pid:[0.03,0.08,0],note:'本车架空实测采用 Kp=0.03、Ki=0.08、Kd=0。这里用同一参数运行辨识模型；其起动过程与实测存在差异，不能把模拟波形当作新的实测。'},
+    {id:'highp',label:'③ P 过大 · 教学',pid:[0.8,0,0],opts:{ramp:false},note:'纯教学参数，非实机推荐。目标直接跳变且 Kp 较大；观察测速滞后和输出斜率如何造成速度与 PWM 来回修正。'},
+    {id:'windup',label:'④ 积分累积 · 教学',pid:[0.03,2,0],target:1500,cap:15,opts:{antiwindup:false,ramp:false,stepdown:true},note:'纯教学参数，非实机推荐。此预设把 PWM 上限降为 15%，前半段 1500 counts/s 高于默认模型能力；8 s 目标减半。切换抗积分饱和并降低 Ki，比较恢复。'},
+    {id:'d',label:'⑤ D 与量化 · 教学',pid:[0.03,0.08,0.025],opts:{quantized:true},note:'纯教学参数，非实机推荐。微分项刻意设大以展示测速量化的影响。展开 PID 分量，再切换整数编码器；本车实测最终采用 Kd=0。'}
+  ];
+  return {DT,END,START,clamp,defaults,simulate,metrics,presets};
+})();
+// Deterministic teaching rubric v1. No hardware qualification is implied.
+const PracticeCore = (()=>{
+  const events=[{t:5,value:4},{t:10,value:0}];
+  const rules=[
+    {key:'error',label:'稳态误差',unit:'%',weight:30,good:2,bad:20},
+    {key:'overshoot',label:'超调',unit:'%',weight:20,good:5,bad:30},
+    {key:'settle',label:'起步稳定',unit:'s',weight:15,good:1.5,bad:3.9},
+    {key:'recovery',label:'加 / 撤载恢复',unit:'s',weight:25,good:1.5,bad:5},
+    {key:'saturation',label:'输出饱和时间',unit:'%',weight:10,good:5,bad:40}
+  ];
+  function setup(pid){
+    const s=LabCore.defaults();
+    for(const ch of ['A','B'])for(const k of ['kp','ki','kd']){
+      const v=pid[ch][k],max={kp:1,ki:2,kd:.05}[k];
+      if(!Number.isFinite(v)||v<0||v>max)throw Error('无效 PID 参数');
+      s[ch][k]=v;
+    }
+    s.options.loadEvents=events.map(e=>({...e}));return s;
+  }
+  function recovery(data,start,end){
+    const phase=data.filter(r=>r.t>=start&&r.t<end);
+    let lastBad=-1;
+    phase.forEach((r,i)=>{if(Math.abs(r.actual-600)>30)lastBad=i;});
+    const t=lastBad<0?start:phase[lastBad].t+LabCore.DT;
+    return t<=end-.5?t-start:null;
+  }
+  function evaluate(pid){
+    const state=setup(pid),motors={};
+    for(const ch of ['A','B']){
+      const p=state[ch],data=LabCore.simulate(p,state.options);
+      const tail=data.filter(r=>(r.t>=4&&r.t<5)||(r.t>=9&&r.t<10)||r.t>=15);
+      const mean=a=>a.reduce((s,v)=>s+v,0)/a.length;
+      const values={error:mean(tail.map(r=>Math.abs(r.actual-600)))/6,
+        overshoot:Math.max(0,...data.map(r=>(r.actual-600)/6)),
+        settle:recovery(data,1.1,5),loadRecovery:recovery(data,5,10),unloadRecovery:recovery(data,10,16),
+        saturation:100*data.filter(r=>r.t>=.5&&r.output>=29.99).length/data.filter(r=>r.t>=.5).length};
+      values.recovery=values.loadRecovery===null||values.unloadRecovery===null?null:Math.max(values.loadRecovery,values.unloadRecovery);
+      const rows=rules.map(rule=>({...rule,value:values[rule.key],points:values[rule.key]===null?0:rule.weight*LabCore.clamp((rule.bad-values[rule.key])/(rule.bad-rule.good),0,1)}));
+      const score=Math.round(rows.reduce((s,r)=>s+r.points,0));
+      const tips=[];
+      if(values.saturation>5)tips.push('输出经常到顶：先减小过激的 P / I；本题上限固定为 30%。');
+      if(values.error>2)tips.push(p.ki===0?'持续误差较大：从小 Ki 开始加入积分。':'持续误差较大：适量增大 Ki，逐次比较末段误差。');
+      if(values.overshoot>5)tips.push('超调偏大：先减小 Ki，再检查 Kp 是否过强。');
+      if(values.recovery===null||values.recovery>1.5)tips.push('负载恢复较慢：小幅增加 Kp；若末段仍有偏差，再增加 Ki。');
+      if(p.kd>.005)tips.push('D 对量化噪声敏感：比较减小 Kd 后的 PWM 波形。');
+      if(!tips.length)tips.push('已达到本题目标。比较更小的参数，观察能否保持响应并减少输出变化。');
+      motors[ch]={pid:{kp:p.kp,ki:p.ki,kd:p.kd},values,rows,score,tips,data};
+    }
+    const score=Math.round((motors.A.score+motors.B.score)/2);
+    return {version:'practice-v1',state,motors,score,grade:score>=90?'优秀':score>=75?'良好':score>=60?'继续优化':'需要调整'};
+  }
+  return {events,rules,setup,evaluate};
+})();
+
+if(typeof module!=='undefined'&&module.exports)module.exports={LabCore,MODEL_DEFAULTS,PracticeCore};
+if(typeof document!=='undefined')(() => {
+  const $=id=>document.getElementById(id), channels=['A','B'];
+  let baseline=null,lessonIndex=0,loadEvents=null;
+  let state=LabCore.defaults(),series={},results={},viewTime=LabCore.END,playing=false,lastFrame=0,hoverTime=null,animation=0;
+  const specs=[['kp','Kp · 比例','% / (counts/s)',0,1,.005],['ki','Ki · 积分','% / count',0,2,.01],['kd','Kd · 微分','% · s² / count',0,.05,.001],['target','目标速度','x4 counts/s',-1500,1500,10],['cap','PWM 上限','%',0,30,1],['accel','目标加速度上限','counts/s²',10,1500,10]];
+  const plantSpecs=[['gain','速度增益 K','(counts/s) / %',1,300,.1],['deadzone','等效运动死区','%',0,25,.01],['tau','时间常数 τ','s',.005,1,.001]];
+  function controlHTML(ch,s){const [key,label,unit,min,max,step]=s;return `<div class="control"><label for="${ch}-${key}-number">${label}<span class="unit">${unit}</span></label><div class="input-pair"><input id="${ch}-${key}-range" type="range" min="${min}" max="${max}" step="${step}" data-channel="${ch}" data-key="${key}" aria-label="电机 ${ch} ${label}"><input id="${ch}-${key}-number" type="number" min="${min}" max="${max}" step="${step}" data-channel="${ch}" data-key="${key}" aria-label="电机 ${ch} ${label} 数值"></div></div>`;}
+  $('controllers').innerHTML=channels.map(ch=>`<article class="card channel-${ch.toLowerCase()}"><div class="channel-head"><h3><span class="motor-id">${ch}</span>电机 ${ch}</h3><span class="tag">模型：一阶惯性 + 死区</span></div><div class="control-grid">${specs.map(s=>controlHTML(ch,s)).join('')}</div><details><summary>模型参数 · 改变电机本身</summary><div class="control-grid plant-fields">${plantSpecs.map(s=>controlHTML(ch,s)).join('')}</div><p class="provenance" id="${ch}-provenance"></p></details></article>`).join('');
+  $('plots').innerHTML=channels.map(ch=>`<article class="card"><div class="channel-head"><h3><span class="motor-id">${ch}</span>电机 ${ch} · 模拟</h3><button class="download" data-png="${ch}">导出波形 PNG</button></div><div class="legend"><span style="--swatch:#ce7d00">内部目标</span><span style="--swatch:#146dc1">模型真实速度</span><span style="--swatch:#009383">滤波测速</span></div><div class="canvas-wrap"><canvas id="${ch}-speed" role="img" aria-label="电机 ${ch} 的目标、模拟真实速度和模拟编码器测速曲线"></canvas></div><div class="chart-meta" id="${ch}-readout"></div><canvas class="small-plot" id="${ch}-pwm" role="img" aria-label="电机 ${ch} 模拟 PWM 百分比曲线"></canvas><div class="metrics"><div class="metric"><strong id="${ch}-error">—</strong><span>稳态误差 · counts/s</span></div><div class="metric"><strong id="${ch}-overshoot">—</strong><span>超调 · %</span></div><div class="metric"><strong id="${ch}-settled">—</strong><span>调节时间 · s</span></div></div><p class="limit-note" id="${ch}-limit"></p><details><summary>展开 P / I / D 分量</summary><div class="legend"><span style="--swatch:#146dc1">P</span><span style="--swatch:#009383">I</span><span style="--swatch:#8c53b4">D</span></div><canvas class="terms-plot" id="${ch}-terms" role="img" aria-label="电机 ${ch} 的 P、I、D 输出贡献，单位百分比"></canvas><p class="note">分量相加后还会经过限幅与斜率限制，因此其和不一定等于实际 PWM。</p></details><button class="download" style="margin-top:12px" data-csv="${ch}">下载本通道模拟 CSV</button></article>`).join('');
+  $('presets').innerHTML=LabCore.presets.map(p=>`<button data-preset="${p.id}" aria-pressed="false">${p.label}</button>`).join('');
+  function syncControls(){for(const ch of channels){for(const s of [...specs,...plantSpecs])for(const type of ['range','number'])$(`${ch}-${s[0]}-${type}`).value=state[ch][s[0]];$(`${ch}-provenance`).textContent=`参数来源：${state[ch].provenance}`;}for(const key of Object.keys(state.options))$(key).checked=state.options[key];updateSourceSummary();}
+  function updateSourceSummary(){$('model-status').textContent=`当前模型来源：A ${state.A.provenance}；B ${state.B.provenance}。`;}
+  function compute(){playing=false;$('play').textContent='播放仿真';for(const ch of channels){series[ch]=LabCore.simulate(state[ch],{...state.options,...(loadEvents===null?{}:{loadEvents})});results[ch]=LabCore.metrics(series[ch],state[ch],{...state.options,...(loadEvents===null?{}:{loadEvents})});const m=results[ch];$(`${ch}-error`).textContent=m.error.toFixed(1);$(`${ch}-overshoot`).textContent=m.overshoot===null?'—':m.overshoot.toFixed(1);$(`${ch}-settled`).textContent=m.settled===null?'未稳定':m.settled.toFixed(2);$(`${ch}-limit`).textContent=Math.abs(state[ch].target)>m.maxPossible?`目标超出此模型在当前上限下的稳态能力（约 ${m.maxPossible.toFixed(0)} counts/s）。`:m.ready>=m.end?'目标斜坡尚未完成：本阶段不足以评估稳定。':'结果只针对上述教学模型。';}viewTime=LabCore.END;hoverTime=null;$('sim-status').textContent='完整模拟已计算';render();}
+  function clearPreset(){document.querySelectorAll('[data-preset]').forEach(b=>b.setAttribute('aria-pressed','false'));$('preset-note').textContent='自定义实验：固定模型和实验条件，一次只改一个 PID 参数，比较结果。';}
+  document.querySelectorAll('[data-channel]').forEach(input=>input.addEventListener('input',()=>{if(input.value===''||!Number.isFinite(Number(input.value)))return;const ch=input.dataset.channel,key=input.dataset.key,spec=[...specs,...plantSpecs].find(s=>s[0]===key);const value=LabCore.clamp(Number(input.value),spec[3],spec[4]);state[ch][key]=value;const twin=input.id.endsWith('-range')?'number':'range';$(`${ch}-${key}-${twin}`).value=value;if(plantSpecs.some(s=>s[0]===key)){state[ch].provenance='用户修改的教学模型，尚未由本车实测拟合';$(`${ch}-provenance`).textContent=`参数来源：${state[ch].provenance}`;updateSourceSummary();}clearPreset();compute();}));
+  document.querySelectorAll('[data-channel]').forEach(input=>input.addEventListener('change',()=>{input.value=state[input.dataset.channel][input.dataset.key];}));
+  for(const key of Object.keys(state.options))$(key).addEventListener('change',()=>{state.options[key]=$(key).checked;if(key==='load')loadEvents=null;clearPreset();compute();});
+  document.querySelectorAll('[data-preset]').forEach(button=>button.addEventListener('click',()=>{const p=LabCore.presets.find(x=>x.id===button.dataset.preset);loadEvents=null;state.options={...LabCore.defaults().options,...p.opts};for(const ch of channels){[state[ch].kp,state[ch].ki,state[ch].kd]=p.pid;state[ch].target=p.target??600;state[ch].cap=p.cap??30;state[ch].accel=1000;}syncControls();document.querySelectorAll('[data-preset]').forEach(b=>b.setAttribute('aria-pressed',String(b===button)));$('preset-note').textContent=p.note;compute();}));
+  $('copy-ab').addEventListener('click',()=>{for(const key of ['kp','ki','kd','target','cap','accel'])state.B[key]=state.A[key];syncControls();clearPreset();compute();});
+  $('restore').addEventListener('click',()=>{baseline=null;loadEvents=null;state=LabCore.defaults();syncControls();clearPreset();$('preset-note').textContent='已恢复实测 PI 与辨识模型：两个模型不同，PID 参数相同。起转摩擦未建模，比较时同时参考实测报告。';compute();});
+  function extent(keys){let lo=0,hi=1;if(baseline)for(const ch of channels)for(const row of baseline.series[ch])for(const key of keys){lo=Math.min(lo,row[key]);hi=Math.max(hi,row[key]);}for(const ch of channels)for(const row of series[ch])for(const key of keys){lo=Math.min(lo,row[key]);hi=Math.max(hi,row[key]);}const pad=(hi-lo)*.1;return [lo<0?lo-pad:0,hi+pad];}
+  function plot(canvas,data,lines,bounds,yLabel){
+    const rect=canvas.getBoundingClientRect();if(!rect.width||!rect.height)return;
+    const width=rect.width,height=rect.height,dpr=Math.min(window.devicePixelRatio||1,3);canvas.width=Math.round(width*dpr);canvas.height=Math.round(height*dpr);
+    const ctx=canvas.getContext('2d');ctx.scale(dpr,dpr);ctx.fillStyle='#ffffff';ctx.fillRect(0,0,width,height);
+    const pad={l:48,r:12,t:22,b:28},w=width-pad.l-pad.r,h=height-pad.t-pad.b;
+    const [lo,hi]=bounds,x=t=>pad.l+t/LabCore.END*w,y=v=>pad.t+(hi-v)/(hi-lo)*h;
+    ctx.font='11px system-ui, Microsoft YaHei';ctx.fillStyle='#586b79';ctx.fillText(yLabel,pad.l,12);
+    ctx.textAlign='right';for(let n=0;n<=4;n++){const v=lo+(hi-lo)*n/4,yy=y(v);ctx.strokeStyle='#e5ebef';ctx.beginPath();ctx.moveTo(pad.l,yy);ctx.lineTo(width-pad.r,yy);ctx.stroke();ctx.fillStyle='#586b79';ctx.fillText(Math.abs(v)<10?v.toFixed(1):v.toFixed(0),pad.l-7,yy+4);}
+    ctx.textAlign='center';for(let sec=0;sec<=LabCore.END;sec+=2){ctx.strokeStyle='#f0f3f5';ctx.beginPath();ctx.moveTo(x(sec),pad.t);ctx.lineTo(x(sec),height-pad.b);ctx.stroke();ctx.fillStyle='#586b79';ctx.fillText(String(sec),x(sec),height-10);}ctx.textAlign='right';ctx.fillText('s',width-2,height-10);
+    ctx.save();ctx.beginPath();ctx.rect(pad.l,pad.t,w,h);ctx.clip();if(baseline && canvas.id.endsWith('-speed')){const ch=canvas.id[0];ctx.strokeStyle='#7b8793';ctx.lineWidth=2;ctx.setLineDash([3,5]);ctx.beginPath();baseline.series[ch].forEach((r,i)=>{if(r.t<=viewTime)(i?ctx.lineTo(x(r.t),y(r.actual)):ctx.moveTo(x(r.t),y(r.actual)));});ctx.stroke();ctx.setLineDash([]);}
+    for(const [key,color,dash] of lines){ctx.beginPath();ctx.strokeStyle=color;ctx.lineWidth=key==='target'?1.7:1.9;ctx.setLineDash(dash||[]);let started=false;for(const r of data){if(r.t>viewTime+1e-8)break;if(!started){ctx.moveTo(x(r.t),y(r[key]));started=true;}else ctx.lineTo(x(r.t),y(r[key]));}ctx.stroke();}ctx.setLineDash([]);
+    for(const [at,label] of [...(loadEvents===null?[[state.options.load?7:null,'负载']]:loadEvents.map(e=>[e.t,e.value?'加载':'撤载'])),[state.options.stepdown?8:null,'目标↓']])if(at!==null){ctx.strokeStyle='#b7c0c8';ctx.setLineDash([3,4]);ctx.beginPath();ctx.moveTo(x(at),pad.t);ctx.lineTo(x(at),height-pad.b);ctx.stroke();ctx.fillStyle='#586b79';ctx.textAlign='left';ctx.fillText(label,x(at)+4,pad.t+12);}ctx.setLineDash([]);
+    const cursor=hoverTime===null?viewTime:Math.min(hoverTime,viewTime);if(cursor>0&&cursor<LabCore.END){ctx.strokeStyle='#64798988';ctx.beginPath();ctx.moveTo(x(cursor),pad.t);ctx.lineTo(x(cursor),height-pad.b);ctx.stroke();}ctx.restore();
+  }
+  function render(){teachReadout();if($("desk"))compactReadout();const speedBounds=extent(['target','actual','measured']),pwmBounds=extent(['output']),termBounds=extent(['p','i','d']);for(const ch of channels){const data=series[ch];plot($(`${ch}-speed`),data,[['target','#ce7d00',[6,4]],['actual','#146dc1'],['measured','#009383']],speedBounds,'速度 · x4 counts/s');plot($(`${ch}-pwm`),data,[['output','#8c53b4']],pwmBounds,'PWM · %');plot($(`${ch}-terms`),data,[['p','#146dc1'],['i','#009383'],['d','#8c53b4']],termBounds,'PID 分量 · %');const t=hoverTime===null?viewTime:Math.min(hoverTime,viewTime),r=data[Math.min(data.length-1,Math.round(t/LabCore.DT))];$(`${ch}-readout`).textContent=`${r.t.toFixed(2)} s　目标 ${r.target.toFixed(1)}　真实 ${r.actual.toFixed(1)}　测速 ${r.measured.toFixed(1)}　PWM ${r.output.toFixed(1)}%`;} $('timebar').value=viewTime;$('time-label').textContent=`${viewTime.toFixed(2)} / ${LabCore.END} s`;}
+  for(const ch of channels)for(const suffix of ['speed','pwm','terms']){const canvas=$(`${ch}-${suffix}`);canvas.addEventListener('pointermove',event=>{const rect=canvas.getBoundingClientRect();hoverTime=LabCore.clamp((event.clientX-rect.left-48)/(rect.width-60)*LabCore.END,0,LabCore.END);render();});canvas.addEventListener('pointerleave',()=>{hoverTime=null;render();});}
+  document.querySelectorAll('details').forEach(d=>d.addEventListener('toggle',render));
+  $('play').addEventListener('click',()=>{cancelAnimationFrame(animation);viewTime=0;hoverTime=null;playing=true;lastFrame=performance.now();$('sim-status').textContent='正在播放离线模拟';$('play').textContent='重新播放';animation=requestAnimationFrame(frame);});
+  function frame(now){if(!playing)return;viewTime=Math.min(LabCore.END,viewTime+Math.max(0,now-lastFrame)/1000*Number($('play-speed').value));lastFrame=now;render();if(viewTime<LabCore.END)animation=requestAnimationFrame(frame);else{playing=false;$('sim-status').textContent='模拟播放完成';$('play').textContent='重新播放';}}
+  $('pause').addEventListener('click',()=>{if(playing){playing=false;$('sim-status').textContent='已暂停 · 拖动时间轴查看';}else{if(viewTime>=LabCore.END)viewTime=0;playing=true;lastFrame=performance.now();cancelAnimationFrame(animation);animation=requestAnimationFrame(frame);$('sim-status').textContent='继续播放离线模拟';}});
+  $('show-all').addEventListener('click',()=>{playing=false;viewTime=LabCore.END;hoverTime=null;render();$('sim-status').textContent='显示完整模拟';});
+  $('timebar').addEventListener('input',()=>{playing=false;viewTime=Number($('timebar').value);hoverTime=null;render();$('sim-status').textContent='手动查看时刻';});
+  function download(blob,name){const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
+  document.querySelectorAll('[data-csv]').forEach(button=>button.addEventListener('click',()=>{const ch=button.dataset.csv,keys=['t','request','target','actual','raw','measured','output','p','i','d'];const meta=`# SIMULATION ONLY; motor=${ch}; model=${JSON.stringify(state[ch])}; options=${JSON.stringify({...state.options,loadEvents})}\n`;download(new Blob(['\ufeff',meta,'time_s,request_cps,target_cps,model_actual_cps,quantized_raw_cps,filtered_cps,pwm_pct,P_pct,I_pct,D_pct\n',series[ch].map(r=>keys.map(k=>r[k].toFixed(6)).join(',')).join('\n')],{type:'text/csv;charset=utf-8'}),`SIMULATION_motor_${ch}.csv`);}));
+  document.querySelectorAll('[data-png]').forEach(button=>button.addEventListener('click',()=>{const ch=button.dataset.png,canvas=document.createElement('canvas');canvas.width=1400;canvas.height=1010;const ctx=canvas.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,1400,1010);ctx.fillStyle='#1b3040';ctx.font='bold 30px system-ui, Microsoft YaHei';ctx.fillText(`电机 ${ch} · PID 离线模拟`,50,52);ctx.font='18px system-ui, Microsoft YaHei';const p=state[ch];ctx.fillText(`Kp=${p.kp}   Ki=${p.ki}   Kd=${p.kd}   目标=${p.target} counts/s   PWM上限=${p.cap}%   加速度=${p.accel} cps²`,50,88);ctx.fillStyle='#586b79';ctx.fillText('模拟数据。蓝：当前速度；绿：测速；橙：目标；紫：PWM；灰虚线：保存的对照速度。',50,122);const exportPlot=(suffix,lines,bounds,label,y,h)=>{const temp=document.createElement('canvas');temp.id=ch+'-'+suffix;temp.style.cssText='position:fixed;left:-10000px;top:0;width:1320px;height:'+h+'px';document.body.append(temp);plot(temp,series[ch],lines,bounds,label);ctx.drawImage(temp,40,y,1320,h);temp.remove();};exportPlot('speed',[['target','#ce7d00',[6,4]],['actual','#146dc1'],['measured','#009383']],extent(['target','actual','measured']),'速度 · cps',150,470);exportPlot('pwm',[['output','#8c53b4']],extent(['output']),'PWM · %',638,240);ctx.font='16px system-ui, Microsoft YaHei';ctx.fillText(`模型 K=${p.gain.toFixed(3)}, 等效运动死区=${p.deadzone.toFixed(3)}%, τ=${p.tau.toFixed(4)}s；死区不是起转门槛。`,50,916);ctx.fillText(`抗饱和 ${state.options.antiwindup?'开':'关'} / PWM斜率 ${state.options.slew?'开':'关'} / 目标斜坡 ${state.options.ramp?'开':'关'} / 整数编码器 ${state.options.quantized?'开':'关'} / 负载 ${loadEvents!==null?'手动事件':state.options.load?'开':'关'} / 目标减半 ${state.options.stepdown?'开':'关'}`,50,946);ctx.fillText(p.provenance,50,976);canvas.toBlob(blob=>{if(blob)download(blob,`SIMULATION_motor_${ch}.png`);},'image/png');}));
+  
+  const lessons=[
+    {title:'01 / P：为什么总差一点？',goal:'先看只有 P 的响应，再只增大 Kp。目标、模型和其他条件保持相同。',question:'曲线已经变平，就代表达到目标了吗？',pid:[.015,0,0],change:()=>channels.forEach(ch=>state[ch].kp=.06),explain:'只增加了 Kp：对照灰线，比较稳态误差。P 依靠误差产生维持转动的输出，因此仅用 P 通常留有偏差。'},
+    {title:'02 / I：补上最后一点差距',goal:'从只有 P 开始，只加入积分，让控制器记住持续存在的误差。',question:'误差变小时，P 的推力也变小；谁来维持电机转动？',pid:[.03,0,0],change:()=>channels.forEach(ch=>state[ch].ki=.08),explain:'只把 Ki 从 0 改为 0.08。比较末段误差；I 累积持续误差，逐渐补足输出。'},
+    {title:'03 / 负载：突然变重怎么办？',goal:'使用 PI，在第 7 秒施加一次持续负载，比较加负载前后的速度。',question:'负载增加后，想保持原速度，PWM 应该升高还是降低？',pid:[.03,.08,0],change:()=>state.options.load=true,explain:'只增加了第 7 秒的负载，等效减少 4% 驱动力。观察速度先跌落、积分与 PWM 随后增加。下方指标取扰动前；请在波形后半段观察恢复。'},
+    {title:'04 / 上限：参数救不了动力不足',goal:'目标保持 600 cps，把 PWM 上限从 30% 降至 7%。',question:'如果一直全力输出却仍达不到目标，继续加 Ki 有用吗？',pid:[.03,.08,0],change:()=>channels.forEach(ch=>state[ch].cap=7),explain:'只降低 PWM 上限。输出贴着上限时叫“饱和”；先检查模型可达速度，再调 PID。上限改变可用驱动力，也会改变响应。'},
+    {title:'05 / 积分饱和：为什么迟迟不收力？',goal:'目标 1500 cps、上限 15%；第 8 秒目标减半。对比开启抗积分饱和的效果。',question:'前半段目标达不到时，积累的积分会怎样影响降速？',pid:[.03,2,0],target:1500,cap:15,opts:{antiwindup:false,ramp:false,stepdown:true},change:()=>state.options.antiwindup=true,explain:'只开启抗积分饱和。比较第 8 秒后的恢复，而不是只看起步指标。本模型仍对积分做 ±PWM 上限夹紧，并非无限积累。'},
+    {title:'06 / D：提前收力，也会放大抖动',goal:'在相同 PI 和整数编码器条件下，加入较大的 D，观察 PWM 与微分项。',question:'离散测速一跳一跳，微分会把它变平滑，还是放大变化？',pid:[.03,.08,0],change:()=>channels.forEach(ch=>state[ch].kd=.025),explain:'只加入 Kd=0.025，用来放大量化效应，非实车推荐值。展开 P/I/D 分量观察微分。D 对测速变化作反应；并不保证所有条件下更平稳。'}
+  ];
+  function saveBaseline(){baseline={state:structuredClone(state),series:structuredClone(series),results:structuredClone(results)};$('baseline-label').textContent='已保存：灰色虚线 = 修改前同一电机；蓝线 = 当前';render();}
+  function loadLesson(){loadEvents=null;const l=lessons[lessonIndex];state=LabCore.defaults();baseline=null;for(const ch of channels){[state[ch].kp,state[ch].ki,state[ch].kd]=l.pid;state[ch].target=l.target??600;state[ch].cap=l.cap??30;}Object.assign(state.options,l.opts||{});syncControls();clearPreset();$('lesson-title').textContent=l.title;$('lesson-goal').textContent=l.goal;$('lesson-question').textContent=l.question;$('lesson-status').textContent='先点播放观察起点，再点“改一个条件，对比”。';$('lesson-change').disabled=false;$('lesson-next').disabled=lessonIndex===lessons.length-1;$('baseline-label').textContent='尚未保存对照；第②步会自动保存起点';document.querySelectorAll('[data-lesson]').forEach(b=>b.setAttribute('aria-pressed',String(Number(b.dataset.lesson)===lessonIndex)));compute();}
+  function postEventSummary(){
+    const at=state.options.load?7:state.options.stepdown?8:null;if(at===null || !baseline)return '';
+    const recovery=(rows)=>{const tail=rows.filter(r=>r.t>=at);let last=-1;tail.forEach((r,i)=>{if(Math.abs(r.actual-r.request)>Math.max(5,Math.abs(r.request)*.05))last=i;});return last<0?'始终在±5%内':last<tail.length-51?((tail[last].t+LabCore.DT)-at).toFixed(2)+' s':'观察期内未恢复';};
+    return ' 事件后恢复（从 '+at+' s 起，进入并保持目标±5%，至少观察0.5秒）：'+channels.map(ch=>ch+' '+recovery(baseline.series[ch])+' → '+recovery(series[ch])).join('；')+'。';
+  }
+  function teachReadout(){if(!series.A)return;const r=series.A[Math.min(series.A.length-1,Math.round((hoverTime??viewTime)/LabCore.DT))],p=state.A;const effort=p.cap?Math.abs(r.output)/p.cap*100:0;const error=r.target-r.measured;
+    $('live-target').textContent=r.target.toFixed(0)+' cps';$('live-actual').textContent=r.actual.toFixed(0)+' cps';$('live-effort').textContent=r.output.toFixed(1)+'% PWM / 上限 '+p.cap+'%';$('target-meter').value=Math.abs(r.target);$('actual-meter').value=Math.abs(r.actual);$('effort-meter').value=effort;
+    $('instant-story').textContent=r.t.toFixed(2)+' 秒：'+(r.t<.5?'目标还未下达，电机静止。':p.cap===0?'PWM 上限为零，电机无法获得驱动力。':effort>99?'输出已到上限；继续增大参数也不能突破这个输出限制。':Math.abs(error)<Math.max(5,Math.abs(r.target)*.05)?'测速已接近目标。维持转动仍需要输出，误差小不代表 PWM 必须为零。':error>0?'测速低于目标，控制器需要补足驱动力；观察 P 和 I 如何贡献输出。':'测速高于目标，控制器正在修正；惯性意味着减小 PWM 后不会瞬间慢下来。');
+    $('comparison-summary').textContent=baseline?channels.map(ch=>{const a=baseline.results[ch],b=results[ch];return ch+'：稳态误差 '+a.error.toFixed(1)+' → '+b.error.toFixed(1)+' cps；超调 '+(a.overshoot??0).toFixed(1)+' → '+(b.overshoot??0).toFixed(1)+'%。';}).join(' ')+postEventSummary()+' 灰线为保存时的模型与工况；改变多个条件时不能把差异归因于单一参数。':'如何读图：橙虚线是内部目标，蓝线是模型实际速度，绿线是控制器看到的测速。A/B 使用各自拟合模型，参数相同也可能有差异；判断参数作用优先比较同一电机的修改前后。';
+  }
+  $('lesson-nav').innerHTML=lessons.map((l,i)=>'<button data-lesson="'+i+'" aria-pressed="false">'+['1 · 比例 P','2 · 积分 I','3 · 抗负载','4 · PWM 上限','5 · 抗饱和','6 · 微分 D'][i]+'</button>').join('');
+  document.querySelectorAll('[data-lesson]').forEach(b=>b.onclick=()=>{lessonIndex=Number(b.dataset.lesson);loadLesson();});
+  $('lesson-play').onclick=()=>$('play').click();$('lesson-reset').onclick=loadLesson;$('lesson-next').onclick=()=>{lessonIndex=Math.min(5,lessonIndex+1);loadLesson();};
+  $('lesson-change').onclick=()=>{loadLesson();saveBaseline();lessons[lessonIndex].change();syncControls();compute();$('lesson-status').textContent=lessons[lessonIndex].explain;$('lesson-change').disabled=true;};
+  $('save-baseline').onclick=saveBaseline;$('clear-baseline').onclick=()=>{baseline=null;$('baseline-label').textContent='对照已清除';render();};
+  $('advanced-mode').onchange=()=>{document.body.classList.toggle('beginner',!$('advanced-mode').checked);render();};
+  window.addEventListener('resize',()=>requestAnimationFrame(render));syncControls();$('preset-note').textContent='当前为本车实测 PI 参数与辨识教学模型，目标 600 counts/s、加速度 1000 counts/s²。先观察，再选择课堂预设。';compute();loadLesson();
+
+  let selectedMotor='A';
+  function compactReadout(){
+    if($("motor-stage"))drawMotors();
+    const r=series[selectedMotor][Math.min(series[selectedMotor].length-1,Math.round((hoverTime??viewTime)/LabCore.DT))],p=state[selectedMotor];
+    const saturated=p.cap>0 && Math.abs(r.output)>=p.cap-.01;
+    $('compact-story').textContent=p.cap===0?'PWM 上限为 0，电机不转。':saturated?'输出到顶：先检查 PWM 上限，再调 PID。':Math.abs(r.target-r.measured)<Math.max(5,Math.abs(r.target)*.05)?'已接近目标，仍需 PWM 维持转速。':'目标与测速有差距：观察 P、I 如何补足输出。';
+    $('compact-story').title=$(`${selectedMotor}-limit`).textContent;
+    $('quick-tip').textContent=document.body.classList.contains('practice')?'600 cps · 30% · 5s 加载 / 10s 撤载 · 只调 PID':['增大 P，偏差减小','加入 I，补足偏差','第 7 秒加负载','降低上限，观察饱和','第 8 秒降速','加入 D，观察抖动'][lessonIndex];
+    $('compact-baseline').textContent=baseline?'灰虚线：修改前':'先保存，再调参';
+  }
+  function compactLayout(){
+    const original=document.querySelector('body>main');original.id='original-content';
+    const desk=document.createElement('div');desk.id='desk';desk.innerHTML=`<header class="desk-head"><h1>PID 实验台<small>离线模拟 · 不连接电机</small></h1><div class="desk-tabs"><button id="open-settings">实验设置</button><button id="open-help">读图帮助</button></div></header><section class="desk-lesson"><div id="nav-slot"></div><div class="desk-hint"><h2 id="short-title">看懂 PID</h2><p id="quick-tip"></p></div><div id="actions-slot"></div></section><div class="desk-body"><aside class="desk-side"><div class="desk-tabs"><strong>电机</strong><button data-motor="A" aria-pressed="true">A</button><button data-motor="B" aria-pressed="false">B</button></div><div id="params-slot"></div><div class="side-actions" id="save-slot"></div><div class="side-actions" id="copy-slot"></div><p class="side-note" id="compact-baseline">先保存，再调参</p></aside><section class="desk-charts" data-plot="speed"><div class="chart-top"><div class="desk-tabs"><button data-plot="speed" aria-pressed="true">速度</button><button data-plot="pwm" aria-pressed="false">PWM</button><button data-plot="terms" aria-pressed="false">P / I / D</button></div><div class="legend" id="compact-legend"><span style="--swatch:#ce7d00">目标</span><span style="--swatch:#146dc1">实际</span><span style="--swatch:#009383">测速</span><span style="--swatch:#7b8793">之前</span></div></div><div id="chart-slot"></div><p id="compact-story"></p></section></div><footer class="desk-footer" id="footer-slot"></footer>`;
+    document.body.append(desk);
+    const move=(id,to)=>$(to).replaceWith($(id));
+    move('lesson-nav','nav-slot');$('actions-slot').replaceWith(document.querySelector('.lesson-actions'));
+    move('controllers','params-slot');move('plots','chart-slot');
+    ['save-baseline','clear-baseline'].forEach(id=>$('save-slot').append($(id)));
+    ['copy-ab','restore'].forEach(id=>$('copy-slot').append($(id)));
+    ['play','pause','show-all','play-speed','timebar','time-label','sim-status'].forEach(id=>$('footer-slot').append($(id)));
+    $('save-baseline').textContent='保存对照';$('clear-baseline').textContent='清除';$('copy-ab').textContent='A 参数 → B';$('restore').textContent='重置 PI';$('lesson-reset').textContent='回到起点';$('lesson-change').textContent='一键对比';$('show-all').textContent='看全程';
+    document.querySelectorAll('#plots details').forEach(d=>d.open=true);
+    const makeDialog=(id,title)=>{const d=document.createElement('dialog');d.id=id;d.innerHTML='<div class="dialog-head"><h2>'+title+'</h2><button aria-label="关闭">关闭 ×</button></div>';d.querySelector('button').onclick=()=>d.close();d.addEventListener('close',render);document.body.append(d);return d;};
+    const help=makeDialog('help-dialog','读图帮助');help.insertAdjacentHTML('beforeend','<p>橙线是目标，蓝线是实际，绿线是测速，灰虚线是保存的对照。</p><p>误差：还差多少；超调：超过多少；调节时间：多久进入目标附近。</p>');
+    help.append($('lesson-status'),$('comparison-summary'));
+    help.append([...original.querySelectorAll('section')].find(x=>x.textContent.includes('怎样读懂这次实验')));
+    const source=[...original.querySelectorAll('details')].find(x=>x.querySelector('summary')?.textContent.includes('教师参考'));if(source)help.append(source);
+    const settings=makeDialog('settings-dialog','实验设置');settings.append(document.querySelector('.advanced-condition'));
+    for(const ch of channels){const detail=$('controllers').querySelector('.channel-'+ch.toLowerCase()+' details');detail.querySelector('summary').textContent='电机 '+ch+' · 模型参数';settings.append(detail);const accel=$(`${ch}-accel-number`).closest('.control');settings.append(accel);}
+    const downloads=document.createElement('div');downloads.className='toolbar section';for(const ch of channels){for(const kind of ['png','csv']){const b=document.querySelector('[data-'+kind+'="'+ch+'"]');b.textContent=ch+' · '+kind.toUpperCase();downloads.append(b);}}settings.append(downloads);
+    $('open-help').onclick=()=>{help.showModal();render();};$('open-settings').onclick=()=>settings.showModal();
+    const selectMotor=ch=>{selectedMotor=ch;channels.forEach(c=>{document.querySelector('#controllers .channel-'+c.toLowerCase()).classList.toggle('motor-hidden',c!==ch);$(`${c}-speed`).closest('article').classList.toggle('motor-hidden',c!==ch);});document.querySelectorAll('[data-motor]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.motor===ch)));render();};
+    document.querySelectorAll('[data-motor]').forEach(b=>b.onclick=()=>selectMotor(b.dataset.motor));
+    document.querySelectorAll('button[data-plot]').forEach(b=>b.onclick=()=>{document.querySelector('.desk-charts').dataset.plot=b.dataset.plot;document.querySelectorAll('button[data-plot]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));$('compact-legend').innerHTML=b.dataset.plot==='speed'?'<span style="--swatch:#ce7d00">目标</span><span style="--swatch:#146dc1">实际</span><span style="--swatch:#009383">测速</span><span style="--swatch:#7b8793">之前</span>':b.dataset.plot==='terms'?'<span style="--swatch:#146dc1">P</span><span style="--swatch:#009383">I</span><span style="--swatch:#8c53b4">D</span>':'输出 · %';render();});
+    document.querySelectorAll('[data-lesson]').forEach(b=>b.addEventListener('click',()=>{$('short-title').textContent=['比例 P','积分 I','负载扰动','PWM 上限','积分饱和','微分 D'][lessonIndex];}));
+    $('short-title').textContent='比例 P';selectMotor('A');
+  }
+  compactLayout();
+
+  function motorMarkup(ch,color){return `<div class="motor-view" id="motor-${ch}" data-loaded="false" role="img" aria-label="电机 ${ch} 速度示意"><svg viewBox="0 0 100 100" aria-hidden="true"><rect x="32" y="80" width="36" height="10" rx="4" fill="#a8b8c5"/><circle cx="50" cy="50" r="39" fill="#163548"/><circle cx="50" cy="50" r="32" fill="#e7eef2"/><g class="rotor" id="rotor-${ch}"><path d="M50 20V80M20 50H80M29 29L71 71M29 71L71 29" stroke="${color}" stroke-width="5"/><circle cx="50" cy="23" r="6" fill="#e49b30"/><circle cx="50" cy="50" r="10" fill="${color}"/></g><path class="brake" d="M88 28V72" stroke="#e68c34" stroke-width="9" stroke-linecap="round"/></svg><div class="motor-read"><span>${ch} 电机</span><strong id="motor-${ch}-speed">0 cps</strong><small id="motor-${ch}-pwm">PWM 0%</small><span class="load-badge" id="motor-${ch}-load">空载</span><meter class="motor-speed-meter" id="motor-${ch}-meter" min="0" max="1500"></meter></div></div>`;}
+  function drawMotors(){
+    // Integrate the simulated position, not wall time: pause, scrub and reverse stay consistent.
+    const t=Math.max(0,Math.min(viewTime,hoverTime??viewTime));
+    for(const ch of channels){const data=series[ch],idx=Math.min(data.length-1,Math.floor(t/LabCore.DT)),r=data[idx],next=data[Math.min(idx+1,data.length-1)],f=(t-r.t)/LabCore.DT;
+      const pos=r.position+(next.position-r.position)*f,actual=r.actual+(next.actual-r.actual)*f;
+      $('rotor-'+ch).style.transform='rotate('+(pos/600*360)+'deg)';
+      $('motor-'+ch+'-speed').textContent=actual.toFixed(0)+' cps';$('motor-'+ch+'-pwm').textContent='PWM '+r.output.toFixed(1)+'%';
+      $('motor-'+ch+'-load').textContent=r.load?'负载 +4%':'空载';$('motor-'+ch).dataset.loaded=String(r.load>0);$('motor-'+ch+'-meter').value=Math.abs(actual);
+      $('motor-'+ch).setAttribute('aria-label','电机 '+ch+'，'+actual.toFixed(0)+' cps，'+(r.load?'有负载':'空载'));
+    }
+    const r=series.A[Math.min(series.A.length-1,Math.max(0,Math.floor(viewTime/LabCore.DT)))];$('toggle-load').textContent=r.load?'撤去负载':'加负载';
+  }
+  function installMotors(){
+    const stage=document.createElement('section');stage.className='motor-stage';stage.id='motor-stage';stage.setAttribute('aria-label','双电机转速动画');stage.innerHTML=motorMarkup('A','#1881bc')+motorMarkup('B','#15977b')+'<div class="motor-actions"><button id="toggle-load">加负载</button><small>双轮同步加载<br>示意：600 cps = 1圈/s</small></div>';
+    document.querySelector('.desk-charts').prepend(stage);
+    $('toggle-load').title='播放中立即加/撤双轮负载；播放结束后从第5秒继续演示';
+    $('toggle-load').onclick=()=>{
+      // A completed run restarts at 5 s; during playback add/remove at the current simulation time.
+      const t=viewTime>=LabCore.END?5:Math.max(.5,Math.round(viewTime/LabCore.DT)*LabCore.DT);
+      const r=series.A[Math.min(series.A.length-1,Math.round(t/LabCore.DT))];
+      if(loadEvents===null)loadEvents=state.options.load?[{t:7,value:4}]:[];
+      loadEvents=loadEvents.filter(e=>e.t<t);loadEvents.push({t,value:r.load?0:4});
+      compute();viewTime=t;hoverTime=null;playing=true;lastFrame=performance.now();cancelAnimationFrame(animation);render();animation=requestAnimationFrame(frame);
+    };
+    // Changing a control replays its newly computed response; it is not online hardware tuning.
+    document.querySelectorAll('[data-channel]').forEach(input=>input.addEventListener('input',()=>{if(input.value!=='' && Number.isFinite(Number(input.value)))$('play').click();}));
+    $('lesson-change').addEventListener('click',()=>$('play').click());
+    drawMotors();
+  }
+  installMotors();
+  let practiceActive=false,practiceSaved=null,practiceAttempt=0,practiceReport=null;
+  const practiceCSS=document.createElement('style');practiceCSS.textContent=`
+    .practice-only{display:none!important}.practice .practice-only{display:inline-flex!important}
+    .practice #lesson-nav,.practice .lesson-actions,.practice #toggle-load,.practice #restore{display:none!important}
+    .practice .desk-lesson{grid-template-columns:1fr auto}.practice .desk-hint{flex-direction:column;align-items:flex-start;gap:2px}
+    .practice .control:has([data-key=target]),.practice .control:has([data-key=cap]){opacity:.65}
+    #practice-report{width:min(850px,96vw);max-height:94dvh;padding:16px;overflow:auto}
+    #practice-report .dialog-head{padding:0 0 8px;position:static}#practice-report h2{font-size:20px}
+    .report-summary{display:flex;gap:14px;align-items:center;padding:8px 12px;background:#e9f5f1;border-radius:9px}
+    .report-summary strong{font-size:28px;color:#087568}.report-summary span{font-size:12px}
+    .report-nav{display:flex;gap:6px;margin:8px 0}.report-nav button{padding:4px 10px;font-size:12px}
+    .practice-wave{display:block;width:100%;height:130px} .practice-table{width:100%;border-collapse:collapse;font-size:12px}
+    .practice-table td,.practice-table th{padding:4px 6px;text-align:left;border-bottom:1px solid #e1e9ed}
+    .practice-tips{font-size:12px;min-height:42px;margin:8px 0}.practice-tips p{margin:3px 0}
+    #practice-report .report-foot{font-size:11px;color:#586b79}.report-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:9px}
+    @media(max-height:650px){#practice-report{padding:12px}.practice-wave{height:100px}.practice-table td,.practice-table th{padding:2px 5px}.practice-tips{min-height:0}}
+    @media(max-width:800px){.desk-head button{padding:4px 7px;font-size:12px}}
+  `;document.head.append(practiceCSS);
+  const practiceButton=document.createElement('button');practiceButton.id='practice-mode';practiceButton.className='primary';practiceButton.textContent='自主练习';document.querySelector('.desk-head .desk-tabs').prepend(practiceButton);
+  const submit=document.createElement('button');submit.id='practice-submit';submit.className='practice-only primary';submit.textContent='提交评估';document.querySelector('.desk-lesson').append(submit);
+  const report=document.createElement('dialog');report.id='practice-report';report.setAttribute('aria-label','练习评估报告');document.body.append(report);
+  function waveSVG(data,ch){
+    const max=Math.max(720,...data.map(r=>r.actual))*1.08;
+    const x=t=>40+t/16*650,y=v=>116-v/max*96;
+    const points=data.filter((r,i)=>i%4===0).map(r=>x(r.t).toFixed(1)+','+y(r.actual).toFixed(1)).join(' ');
+    return `<svg class="practice-wave" viewBox="0 0 710 140" role="img" aria-label="电机 ${ch} 完整练习速度曲线"><rect width="710" height="140" fill="#fff"/><rect x="${x(5)}" y="16" width="${x(10)-x(5)}" height="100" fill="#fff2de"/><path d="M40 16V116H690" fill="none" stroke="#afbdc7"/><path d="M40 ${y(600)}H690" stroke="#ce7d00" stroke-dasharray="5 4"/><polyline points="${points}" fill="none" stroke="${ch==='A'?'#146dc1':'#009383'}" stroke-width="2"/><g font-size="11" fill="#586b79"><text x="40" y="12">${ch} 速度 · cps　橙虚线 600</text><text x="${x(5)+3}" y="28">加载</text><text x="${x(10)+3}" y="28">撤载</text><text x="8" y="${y(600)+4}">600</text><text x="24" y="119">0</text>${[0,5,10,16].map(t=>`<text x="${x(t)-4}" y="135">${t}s</text>`).join('')}</g></svg>`;
+  }
+  const displayValue=(v,unit)=>v===null?'未恢复':v.toFixed(2)+' '+unit;
+  function reportMotor(ch){const m=practiceReport.motors[ch];return `<p class="report-foot">${ch} 电机 ${m.score} 分 · Kp ${m.pid.kp} / Ki ${m.pid.ki} / Kd ${m.pid.kd}</p>${waveSVG(m.data,ch)}<table class="practice-table"><thead><tr><th>指标</th><th>结果</th><th>满分目标</th><th>得分</th></tr></thead><tbody>${m.rows.map(r=>`<tr><td>${r.label}</td><td>${displayValue(r.value,r.unit)}</td><td>≤ ${r.good} ${r.unit}</td><td>${r.points.toFixed(1)} / ${r.weight}</td></tr>`).join('')}</tbody></table><div class="practice-tips">${m.tips.slice(0,3).map(t=>`<p>• ${t}</p>`).join('')}</div>`;}
+  function ruleText(){return `<p>固定题目：双轮 600 cps、30% PWM；5秒加负载、10秒撤载，共16秒。只调整两轮 PID。</p><p>误差取 4–5、9–10、15–16 秒真实模拟速度的平均绝对误差；超调取全程最大值。稳定须进入 ±5% 并保持至阶段末尾，至少持续 0.5 秒；起步从目标斜坡完成的 1.1 秒计时。恢复取加、撤载中较慢者。</p><p>每项从满分目标到零分界限线性扣分；未恢复该项为 0。零分界限：误差20%、超调30%、起步3.9秒、恢复5秒、饱和40%。总分为 A / B 平均；90优秀、75良好、60继续优化。</p><p>仅评价本题教学模型，不代表真实电机性能。所有计算在浏览器本地完成，不上传作答。</p>`;}
+  function downloadReport(){
+    const html=`<!doctype html><html lang="zh-CN"><meta charset="utf-8"><title>PID 练习评估报告</title><style>body{max-width:900px;margin:32px auto;padding:20px;font:15px/1.6 system-ui;color:#1b3040}table{width:100%;border-collapse:collapse}td,th{text-align:left;padding:7px;border-bottom:1px solid #ddd}svg{width:100%;height:auto}h2{margin-top:28px}.report-foot{color:#586b79}p{margin:8px 0}</style><h1>PID 自主练习 · 第 ${practiceReport.attempt} 次</h1><p>${practiceReport.date} · 总分 ${practiceReport.score} / 100 · ${practiceReport.grade}</p>${['A','B'].map(ch=>'<h2>电机 '+ch+'</h2>'+reportMotor(ch)).join('')}<h2>评估规则</h2>${ruleText()}<h2>复现参数</h2><pre>${JSON.stringify(practiceReport.state,null,2)}</pre></html>`;
+    download(new Blob(['\ufeff',html],{type:'text/html;charset=utf-8'}),'PID_practice_'+practiceReport.attempt+'.html');
+  }
+  function showReport(){
+    report.innerHTML=`<div class="dialog-head"><h2>练习评估 · 第 ${practiceReport.attempt} 次</h2><button id="report-close" aria-label="关闭评估报告">关闭 ×</button></div><div class="report-summary"><strong>${practiceReport.score}<small> / 100</small></strong><span>${practiceReport.grade}<br>本次提交快照 · 双轮平均分</span></div><div class="report-nav"><button data-report="A">A 电机</button><button data-report="B">B 电机</button><button data-report="rules">评分规则</button></div><div id="report-content"></div><p class="report-foot">离线模拟评分 · 不是实测验收</p><div class="report-actions"><button id="report-download">下载 HTML 报告</button><button id="report-retry" class="primary">继续调参</button></div>`;
+    const select=ch=>{document.querySelectorAll('[data-report]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.report===ch)));$('report-content').innerHTML=ch==='rules'?'<div class="practice-tips">'+ruleText()+'</div>':reportMotor(ch);};select('A');
+    document.querySelectorAll('[data-report]').forEach(b=>b.onclick=()=>select(b.dataset.report));
+    $('report-close').onclick=$('report-retry').onclick=()=>report.close();$('report-download').onclick=downloadReport;report.showModal();
+  }
+  practiceButton.onclick=()=>{
+    playing=false;cancelAnimationFrame(animation);
+    if(!practiceActive){
+      practiceSaved={state:JSON.parse(JSON.stringify(state)),loadEvents,baseline,lessonIndex};
+      state=PracticeCore.setup({A:{kp:.015,ki:0,kd:0},B:{kp:.015,ki:0,kd:0}});delete state.options.loadEvents;
+      loadEvents=PracticeCore.events.map(e=>({...e}));baseline=null;practiceActive=true;practiceButton.textContent='退出练习';
+    }else{({state,loadEvents,baseline,lessonIndex}=practiceSaved);practiceActive=false;practiceButton.textContent='自主练习';}
+    document.body.classList.toggle('practice',practiceActive);
+    document.querySelectorAll('[data-channel]').forEach(i=>i.disabled=practiceActive&&!['kp','ki','kd'].includes(i.dataset.key));
+    $('open-settings').disabled=practiceActive;
+    $('short-title').textContent=practiceActive?'练习：双轮稳速 + 抗扰动':['比例 P','积分 I','负载扰动','PWM 上限','积分饱和','微分 D'][lessonIndex];
+    syncControls();compute();if(practiceActive)$('play').click();
+  };
+  submit.onclick=()=>{
+    practiceReport=PracticeCore.evaluate(state);practiceReport.attempt=++practiceAttempt;practiceReport.date=new Date().toLocaleString('zh-CN');
+    series={A:practiceReport.motors.A.data,B:practiceReport.motors.B.data};playing=false;cancelAnimationFrame(animation);viewTime=16;hoverTime=null;render();showReport();
+  };
+
+
+
+})();
+</script>
+</body></html>

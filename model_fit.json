@@ -1,0 +1,42 @@
+{
+  "kind": "teaching_approximation_from_actual_motor_trials",
+  "measurement_unit": "quadrature_counts_per_second; output-shaft CPR not calibrated",
+  "model": "dv/dt = (gain * sign(PWM) * max(abs(PWM)-deadzone,0) - v) / tau",
+  "measurement_filter": {
+    "tau_seconds": 0.05,
+    "controller_step_seconds": 0.01,
+    "formula": "f += dt/(0.050+dt)*(v-f)",
+    "fitted": false
+  },
+  "method": [
+    "Encoder sign from each saved trial JSON; velocity is signed adjacent count difference / MCU elapsed time.",
+    "Static gain/deadzone: equal-weight regression of each trial's final 1 second of nonzero-target SPEED/NONE intervals.",
+    "Static fit uses absolute speed/PWM, pooling directions; deadzone is an extrapolated moving-friction intercept.",
+    "Fix static parameters, then grid-search plant tau against count-interval speeds during active runs, weighting trials equally.",
+    "Simulate with linearly reconstructed PWM and <=10 ms steps; model the 50 ms measurement filter separately.",
+    "both_1000_repeat is exclusively held out from static and dynamic fitting."
+  ],
+  "limitations": [
+    "Closed-loop traces do not identify a precise open-loop motor model; this is a teaching approximation.",
+    "Breakaway friction, hysteresis, direction asymmetry, supply/loading and temperature changes are not modeled.",
+    "The fitted static intercept is not a measured starting PWM threshold.",
+    "PWM between 20 Hz telemetry samples is reconstructed, not measured at every controller tick.",
+    "Count quantization and sampled input limit identification below the roughly 50 ms telemetry interval.",
+    "Successful closed-loop steady tracking does not establish accurate transient/open-loop dynamics.",
+    "Repeated 1000 cps validation only checks that tested operating condition; no reliability/confidence interval is claimed."
+  ],
+  "model_defaults": {
+    "A": {
+      "gain": 98.05840828475944,
+      "deadzone": 2.43103334,
+      "tau": 0.2748678456496658,
+      "provenance": "本车实测拟合的教学近似；闭环数据与起转摩擦限制动态精度，详见 model_fit.json"
+    },
+    "B": {
+      "gain": 94.3942079410967,
+      "deadzone": 2.6237544899999996,
+      "tau": 0.22533845572874747,
+      "provenance": "本车实测拟合的教学近似；闭环数据与起转摩擦限制动态精度，详见 model_fit.json"
+    }
+  }
+}
