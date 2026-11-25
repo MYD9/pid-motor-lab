@@ -168,10 +168,42 @@ const PracticeCore = (()=>{
       if(values.recovery===null||values.recovery>1.5)tips.push('负载恢复较慢：小幅增加 Kp；若末段仍有偏差，再增加 Ki。');
       if(p.kd>.005)tips.push('D 对量化噪声敏感：比较减小 Kd 后的 PWM 波形。');
       if(!tips.length)tips.push('已达到本题目标。比较更小的参数，观察能否保持响应并减少输出变化。');
-      motors[ch]={pid:{kp:p.kp,ki:p.ki,kd:p.kd},values,rows,score,tips,data};
+      const phases=[[0.5,5,4,'起步 / 空载'],[5,10,9,'加负载'],[10,16,15,'撤负载']].map(([start,end,tailStart,label])=>{
+        const span=data.filter(r=>r.t>=start&&r.t<end),last=span.filter(r=>r.t>=tailStart);
+        return {label,start,end,meanSpeed:mean(last.map(r=>r.actual)),signedError:600-mean(last.map(r=>r.actual)),
+          min:Math.min(...span.map(r=>r.actual)),max:Math.max(...span.map(r=>r.actual)),
+          ripple:Math.max(...last.map(r=>r.actual))-Math.min(...last.map(r=>r.actual)),
+          recovery:label==='起步 / 空载'?values.settle:label==='加负载'?values.loadRecovery:values.unloadRecovery};
+      });
+      const guide=guidance(p,values,phases);
+      motors[ch]={pid:{kp:p.kp,ki:p.ki,kd:p.kd},values,rows,score,tips,data,phases,guide};
     }
     const score=Math.round((motors.A.score+motors.B.score)/2);
     return {version:'practice-v1',state,motors,score,grade:score>=90?'优秀':score>=75?'良好':score>=60?'继续优化':'需要调整'};
+  }
+  function guidance(p,v,phases){
+    const f=x=>Number(x.toFixed(5));
+    let g;
+    if(p.kp===0&&p.ki===0){
+      g={title:'先让控制器产生驱动力',evidence:'Kp 和 Ki 都为 0，目标误差没有转成有效驱动力。',why:'本模型的 D 对测速变化起作用，不能替代 P / I 启动电机。',key:'kp',to:.015,action:'先保留 Ki=0，只把 Kp 从 0 调到 0.015，建立可比较的起步响应。',watch:'看 0.5–5 秒：速度应开始上升。此时存在稳态误差很正常，下一轮再加入 I。'};
+    }else if(p.kd>.005){
+      g={title:'先排除微分对量化的放大',evidence:`Kd=${p.kd}；测速含整数计数量化，较大的 D 有放大输出抖动的风险。`,why:'D 使用测速变化率；细小的测速台阶也可能形成较大的修正。这是参数风险提示，不单凭 Kd 就认定已经振荡。',key:'kd',to:f(p.kd*.5),action:'保持 P / I 不变，先将 Kd 减半；若 PWM 仍频繁锯齿变化，再单独试 Kd=0。',watch:'切到 PWM 和 P / I / D，比较高频修正是否减弱；同时确认恢复时间没有明显变差。'};
+    }else if(v.saturation>5){
+      const key=p.ki>0?'ki':'kp';
+      g={title:'先处理输出到顶',evidence:`全程有 ${v.saturation.toFixed(1)}% 的运动时间达到 30% PWM 上限。`,why:'输出已到上限时，再增大参数不能增加当时的驱动力；积分和过激修正可能延长饱和。',key,to:f(p[key]*.8),action:`先把 ${key==='ki'?'Ki':'Kp'} 降低约 20%，其余不变。此题上限固定，不靠增大上限换取分数。`,watch:'看 PWM 平顶时段是否缩短，以及撤载后冲高是否改善；若误差恶化，撤回这次改动。'};
+    }else if(v.overshoot>5){
+      const key=p.ki>0?'ki':'kp';
+      g={title:'先减轻冲过目标的幅度',evidence:`全程最大超调 ${v.overshoot.toFixed(2)}%，满分目标 ≤5%；撤载阶段峰值 ${phases[2].max.toFixed(0)} cps。`,why:'撤载后，原来为克服负载提供的输出暂时偏多。仅凭波形不能唯一确定原因，先用单变量对照检查积分强度。',key,to:f(p[key]*.8),action:`先把 ${key==='ki'?'Ki':'Kp'} 降低约 20%，另外两项保持不变，再提交一次。`,watch:'重点看 10–12 秒峰值是否降低；同时看加 / 撤载恢复是否变慢、末段误差是否增大。不要只追求超调这一项。'};
+    }else if(v.error>2){
+      g={title:'补足持续存在的速度偏差',evidence:`末段平均绝对误差 ${v.error.toFixed(2)}%，满分目标 ≤2%（12 cps）。`,why:'P 的输出依赖当前误差，因此单用 P 通常有持续偏差；I 可以累积偏差补足维持转速所需的输出。',key:'ki',to:f(p.ki===0?.01:Math.min(2,p.ki*1.15)),action:p.ki===0?'保持 Kp 不变，先试 Ki=0.01；不要一次把积分加得很大。':'先把 Ki 增加约 15%，保持 Kp / Kd 不变。',watch:'对比 4–5、9–10、15–16 秒偏差是否减小；若超调或末段摆动增加，撤回并减小步长。'};
+    }else if(v.recovery===null||v.recovery>1.5||v.settle===null||v.settle>1.5){
+      g={title:'加快误差出现后的修正',evidence:`加载恢复 ${v.loadRecovery===null?'未达标':v.loadRecovery.toFixed(2)+' s'}，撤载恢复 ${v.unloadRecovery===null?'未达标':v.unloadRecovery.toFixed(2)+' s'}；起步稳定 ${v.settle===null?'未达标':v.settle.toFixed(2)+' s'}。`,why:'P 决定当前误差产生多强的修正；小幅增加可能加快响应，但测速滞后会限制可用增益。',key:'kp',to:f(p.kp===0?.005:Math.min(1,p.kp*1.15)),action:'先把 Kp 增加约 15%（若为 0，先试 0.005），保持 Ki / Kd 不变。',watch:'比较起步与负载恢复时间；一旦超调或反复摆动明显增加，恢复旧值，并把步长减半。'};
+    }else{
+      g={title:'已达到本题各项满分目标',evidence:`误差 ${v.error.toFixed(2)}%、超调 ${v.overshoot.toFixed(2)}%，起步及扰动恢复也在目标范围内。`,why:'一组有效 PID 并不意味着参数唯一。继续练习应比较响应与输出变化之间的取舍。',key:'kp',to:f(p.kp*.9),action:'先保存当前对照，再单独降低 Kp 约 10% 做探索；不以分数更高为必然结果。',watch:'观察维持性能时能否减少输出修正。如果恢复变慢或误差增加，保留原来这一组。'};
+    }
+    g.from=p[g.key];g.to=LabCore.clamp(g.to,0,{kp:1,ki:2,kd:.05}[g.key]);
+    if(g.to===g.from)g.action='该参数已到可调边界，不再沿这个方向增加。先保存当前结果，回看 PWM 和末段波形，尝试回退上一轮过大的改动。';
+    return g;
   }
   return {events,rules,setup,evaluate};
 })();
@@ -332,7 +364,9 @@ if(typeof document!=='undefined')(() => {
     #practice-report .dialog-head{padding:0 0 8px;position:static}#practice-report h2{font-size:20px}
     .report-summary{display:flex;gap:14px;align-items:center;padding:8px 12px;background:#e9f5f1;border-radius:9px}
     .report-summary strong{font-size:28px;color:#087568}.report-summary span{font-size:12px}
-    .report-nav{display:flex;gap:6px;margin:8px 0}.report-nav button{padding:4px 10px;font-size:12px}
+    .report-nav{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}.report-nav button{padding:4px 10px;font-size:12px}
+    .guide-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:10px 0}.guide-card{background:#f4f7f9;border:1px solid #e1e9ed;border-radius:9px;padding:10px;font-size:12px;line-height:1.65}.guide-card b{display:block;color:#086d60;margin-bottom:4px}.guide-title{font-size:16px;margin:8px 0}.guide-step{background:#e9f5f1;border-radius:8px;padding:8px 10px;font-size:13px}.report-nav button[aria-pressed=true]{background:#e6f3f1;border-color:#329e8d;color:#096c5b}.phase-note{font-size:12px;line-height:1.8;margin:12px 0}.report-hint{font-size:12px;margin:8px 0;color:#35695f}
+    @media(max-height:650px){.guide-card{padding:7px;line-height:1.5}.guide-grid{gap:6px;margin:6px 0}.guide-title{margin:4px 0}.guide-step{padding:5px 8px}.phase-note{margin:8px 0}}
     .practice-wave{display:block;width:100%;height:130px} .practice-table{width:100%;border-collapse:collapse;font-size:12px}
     .practice-table td,.practice-table th{padding:4px 6px;text-align:left;border-bottom:1px solid #e1e9ed}
     .practice-tips{font-size:12px;min-height:42px;margin:8px 0}.practice-tips p{margin:3px 0}
@@ -350,16 +384,20 @@ if(typeof document!=='undefined')(() => {
     return `<svg class="practice-wave" viewBox="0 0 710 140" role="img" aria-label="电机 ${ch} 完整练习速度曲线"><rect width="710" height="140" fill="#fff"/><rect x="${x(5)}" y="16" width="${x(10)-x(5)}" height="100" fill="#fff2de"/><path d="M40 16V116H690" fill="none" stroke="#afbdc7"/><path d="M40 ${y(600)}H690" stroke="#ce7d00" stroke-dasharray="5 4"/><polyline points="${points}" fill="none" stroke="${ch==='A'?'#146dc1':'#009383'}" stroke-width="2"/><g font-size="11" fill="#586b79"><text x="40" y="12">${ch} 速度 · cps　橙虚线 600</text><text x="${x(5)+3}" y="28">加载</text><text x="${x(10)+3}" y="28">撤载</text><text x="8" y="${y(600)+4}">600</text><text x="24" y="119">0</text>${[0,5,10,16].map(t=>`<text x="${x(t)-4}" y="135">${t}s</text>`).join('')}</g></svg>`;
   }
   const displayValue=(v,unit)=>v===null?'未恢复':v.toFixed(2)+' '+unit;
-  function reportMotor(ch){const m=practiceReport.motors[ch];return `<p class="report-foot">${ch} 电机 ${m.score} 分 · Kp ${m.pid.kp} / Ki ${m.pid.ki} / Kd ${m.pid.kd}</p>${waveSVG(m.data,ch)}<table class="practice-table"><thead><tr><th>指标</th><th>结果</th><th>满分目标</th><th>得分</th></tr></thead><tbody>${m.rows.map(r=>`<tr><td>${r.label}</td><td>${displayValue(r.value,r.unit)}</td><td>≤ ${r.good} ${r.unit}</td><td>${r.points.toFixed(1)} / ${r.weight}</td></tr>`).join('')}</tbody></table><div class="practice-tips">${m.tips.slice(0,3).map(t=>`<p>• ${t}</p>`).join('')}</div>`;}
+  function reportMotor(ch){const m=practiceReport.motors[ch];return `<p class="report-foot">${ch} 电机 ${m.score} 分 · Kp ${m.pid.kp} / Ki ${m.pid.ki} / Kd ${m.pid.kd}</p>${waveSVG(m.data,ch)}<table class="practice-table"><thead><tr><th>指标</th><th>结果</th><th>满分目标</th><th>得分</th></tr></thead><tbody>${m.rows.map(r=>`<tr><td>${r.label}</td><td>${displayValue(r.value,r.unit)}</td><td>≤ ${r.good} ${r.unit}</td><td>${r.points.toFixed(1)} / ${r.weight}</td></tr>`).join('')}</tbody></table><p class="report-hint">优先处理：${m.guide.title} → 点击「调参指导」查看具体做法。</p>`;}
+  function guideMotor(ch){const g=practiceReport.motors[ch].guide;return `<h3 class="guide-title">${ch} · ${g.title}</h3><div class="guide-step">本轮只试 ${g.key.toUpperCase()}：<b>${g.from} → ${g.to}</b>　另外两项保持不变</div><div class="guide-grid"><div class="guide-card"><b>① 依据：哪里没做好</b>${g.evidence}</div><div class="guide-card"><b>② 理解：可能为什么</b>${g.why}</div><div class="guide-card"><b>③ 操作：下一次怎么调</b>${g.action}</div><div class="guide-card"><b>④ 验证：调后看什么</b>${g.watch}</div></div><p class="report-foot">这是单变量尝试，不是已验证最优值。先保存对照 → 只改一项 → 重播 / 提交 → 比较；变差就回退并减半步长。</p>`;}
+  function phaseMotor(ch){const m=practiceReport.motors[ch];return `<h3 class="guide-title">${ch} · 分段看，避免总分掩盖问题</h3><table class="practice-table"><thead><tr><th>阶段</th><th>末秒均速</th><th>平均偏差</th><th>稳定 / 恢复</th></tr></thead><tbody>${m.phases.map(p=>`<tr><td>${p.label}<br>${p.start}–${p.end} s</td><td>${p.meanSpeed.toFixed(1)} cps</td><td>${Math.abs(p.signedError).toFixed(1)} cps ${p.signedError>=0?'偏低':'偏高'}</td><td>${displayValue(p.recovery,'s')}</td></tr>`).join('')}</tbody></table><div class="phase-note"><p><b>起步：</b>先看能否达到 600 cps，再看是否反复越过目标。评分中的起步时间从斜坡完成的 1.1 秒开始算。</p><p><b>5 秒加载：</b>速度下跌正常。观察 PWM 是否增加、速度能否回到 570–630 cps 并保持；一直偏低时检查积分，输出到顶时先看饱和。</p><p><b>10 秒撤载：</b>原来的驱动力可能偏多，重点看冲高与回落。冲得高又恢复慢时，先用减小 Ki 的单变量实验判断。</p><p><b>末段摆动：</b>本轮三段末秒峰峰值为 ${m.phases.map(p=>p.ripple.toFixed(1)).join(' / ')} cps。它只描述这一秒的变化，不单独证明持续振荡。</p></div><p class="report-foot">评分用平均绝对误差；本表的平均偏差有方向，正负抵消时可能较小，两者含义不同。</p>`;}
   function ruleText(){return `<p>固定题目：双轮 600 cps、30% PWM；5秒加负载、10秒撤载，共16秒。只调整两轮 PID。</p><p>误差取 4–5、9–10、15–16 秒真实模拟速度的平均绝对误差；超调取全程最大值。稳定须进入 ±5% 并保持至阶段末尾，至少持续 0.5 秒；起步从目标斜坡完成的 1.1 秒计时。恢复取加、撤载中较慢者。</p><p>每项从满分目标到零分界限线性扣分；未恢复该项为 0。零分界限：误差20%、超调30%、起步3.9秒、恢复5秒、饱和40%。总分为 A / B 平均；90优秀、75良好、60继续优化。</p><p>仅评价本题教学模型，不代表真实电机性能。所有计算在浏览器本地完成，不上传作答。</p>`;}
   function downloadReport(){
-    const html=`<!doctype html><html lang="zh-CN"><meta charset="utf-8"><title>PID 练习评估报告</title><style>body{max-width:900px;margin:32px auto;padding:20px;font:15px/1.6 system-ui;color:#1b3040}table{width:100%;border-collapse:collapse}td,th{text-align:left;padding:7px;border-bottom:1px solid #ddd}svg{width:100%;height:auto}h2{margin-top:28px}.report-foot{color:#586b79}p{margin:8px 0}</style><h1>PID 自主练习 · 第 ${practiceReport.attempt} 次</h1><p>${practiceReport.date} · 总分 ${practiceReport.score} / 100 · ${practiceReport.grade}</p>${['A','B'].map(ch=>'<h2>电机 '+ch+'</h2>'+reportMotor(ch)).join('')}<h2>评估规则</h2>${ruleText()}<h2>复现参数</h2><pre>${JSON.stringify(practiceReport.state,null,2)}</pre></html>`;
+    const html=`<!doctype html><html lang="zh-CN"><meta charset="utf-8"><title>PID 练习评估报告</title><style>body{max-width:900px;margin:32px auto;padding:20px;font:15px/1.6 system-ui;color:#1b3040}table{width:100%;border-collapse:collapse}td,th{text-align:left;padding:7px;border-bottom:1px solid #ddd}svg{width:100%;height:auto}h2{margin-top:28px}.report-foot{color:#586b79}p{margin:8px 0}.guide-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.guide-card{padding:12px;background:#f4f7f9}.guide-card b{display:block}.guide-step{padding:10px;background:#e9f5f1}</style><h1>PID 自主练习 · 第 ${practiceReport.attempt} 次</h1><p>${practiceReport.date} · 总分 ${practiceReport.score} / 100 · ${practiceReport.grade}</p>${['A','B'].map(ch=>'<h2>电机 '+ch+'</h2>'+reportMotor(ch)+guideMotor(ch)+phaseMotor(ch)).join('')}<h2>评估规则</h2>${ruleText()}<h2>复现参数</h2><pre>${JSON.stringify(practiceReport.state,null,2)}</pre></html>`;
     download(new Blob(['\ufeff',html],{type:'text/html;charset=utf-8'}),'PID_practice_'+practiceReport.attempt+'.html');
   }
   function showReport(){
-    report.innerHTML=`<div class="dialog-head"><h2>练习评估 · 第 ${practiceReport.attempt} 次</h2><button id="report-close" aria-label="关闭评估报告">关闭 ×</button></div><div class="report-summary"><strong>${practiceReport.score}<small> / 100</small></strong><span>${practiceReport.grade}<br>本次提交快照 · 双轮平均分</span></div><div class="report-nav"><button data-report="A">A 电机</button><button data-report="B">B 电机</button><button data-report="rules">评分规则</button></div><div id="report-content"></div><p class="report-foot">离线模拟评分 · 不是实测验收</p><div class="report-actions"><button id="report-download">下载 HTML 报告</button><button id="report-retry" class="primary">继续调参</button></div>`;
-    const select=ch=>{document.querySelectorAll('[data-report]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.report===ch)));$('report-content').innerHTML=ch==='rules'?'<div class="practice-tips">'+ruleText()+'</div>':reportMotor(ch);};select('A');
-    document.querySelectorAll('[data-report]').forEach(b=>b.onclick=()=>select(b.dataset.report));
+    report.innerHTML=`<div class="dialog-head"><h2>练习评估 · 第 ${practiceReport.attempt} 次</h2><button id="report-close" aria-label="关闭评估报告">关闭 ×</button></div><div class="report-summary"><strong>${practiceReport.score}<small> / 100</small></strong><span>${practiceReport.grade}<br>本次提交快照 · 双轮平均分</span></div><div class="report-nav"><button data-report-motor="A">A 电机</button><button data-report-motor="B">B 电机</button><span style="flex:1"></span><button data-report-view="score">成绩 / 波形</button><button data-report-view="guide">调参指导</button><button data-report-view="phases">分段诊断</button><button data-report-view="rules">评分规则</button></div><div id="report-content"></div><p class="report-foot">离线模拟评分 · 不是实测验收</p><div class="report-actions"><button id="report-download">下载 HTML 报告</button><button id="report-retry" class="primary">继续调参</button></div>`;
+    let ch='A',view='score';
+    const update=()=>{document.querySelectorAll('[data-report-motor]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.reportMotor===ch)));document.querySelectorAll('[data-report-view]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.reportView===view)));$('report-content').innerHTML=view==='guide'?guideMotor(ch):view==='phases'?phaseMotor(ch):view==='rules'?'<div class="practice-tips">'+ruleText()+'</div>':reportMotor(ch);};update();
+    document.querySelectorAll('[data-report-motor]').forEach(b=>b.onclick=()=>{ch=b.dataset.reportMotor;update();});
+    document.querySelectorAll('[data-report-view]').forEach(b=>b.onclick=()=>{view=b.dataset.reportView;update();});
     $('report-close').onclick=$('report-retry').onclick=()=>report.close();$('report-download').onclick=downloadReport;report.showModal();
   }
   practiceButton.onclick=()=>{

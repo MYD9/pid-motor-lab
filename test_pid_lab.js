@@ -131,4 +131,14 @@ test('practice rejects invalid parameters and keeps extreme grades finite',()=>{
     if(pid[0]===0){assert.ok(r.score<60);assert.equal(r.motors.A.values.error,100);}
   }
 });
+test('guidance prioritizes one parameter and exposes phase evidence without changing scores',()=>{
+  const s=C.defaults(),r=P.evaluate(s);assert.equal(r.score,89);
+  const g=r.motors.A.guide;assert.equal(g.key,'ki');assert.equal(g.from,.08);assert.equal(g.to,.064);
+  assert.ok(g.evidence.includes('超调'));assert.ok(g.watch.includes('10–12'));
+  assert.equal(r.motors.A.phases.length,3);assert.ok(r.motors.A.phases.every(p=>Number.isFinite(p.signedError)&&p.ripple>=0));
+  s.A.ki=0;const p=P.evaluate(s).motors.A.guide;assert.equal(p.key,'ki');assert.equal(p.to,.01);
+  s.A.kd=.025;const d=P.evaluate(s).motors.A.guide;assert.equal(d.key,'kd');assert.equal(d.to,.0125);
+  s.A.kp=0;s.A.kd=0;const z=P.evaluate(s).motors.A.guide;assert.equal(z.key,'kp');assert.equal(z.to,.015);
+  for(const guide of [g,p,d,z])assert.ok([guide.title,guide.evidence,guide.why,guide.action,guide.watch].every(t=>t.length>8));
+});
 console.log(`${cases} simulation tests passed. These do not validate a real motor or browser rendering.`);
