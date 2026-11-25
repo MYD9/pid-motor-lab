@@ -141,4 +141,16 @@ test('guidance prioritizes one parameter and exposes phase evidence without chan
   s.A.kp=0;s.A.kd=0;const z=P.evaluate(s).motors.A.guide;assert.equal(z.key,'kp');assert.equal(z.to,.015);
   for(const guide of [g,p,d,z])assert.ok([guide.title,guide.evidence,guide.why,guide.action,guide.watch].every(t=>t.length>8));
 });
+test('problem markers use exact thresholds and do not flag normal startup as slow',()=>{
+  const good=P.evaluate(C.defaults()).motors.A;
+  assert.ok(good.markers.find(m=>m.key==='overshoot').spans.some(s=>s.start>=10));
+  assert.equal(good.markers.find(m=>m.key==='slow').spans.length,0);
+  const data=good.data.map(r=>({...r,actual:600,output:10}));
+  assert.ok(P.markers(data).every(m=>m.spans.length===0));
+  for(const r of data){if(r.t>=9&&r.t<10)r.actual=550;if(r.t>=10.2&&r.t<10.4){r.actual=650;r.output=30;}}
+  const marks=P.markers(data),get=k=>marks.find(m=>m.key===k).spans;
+  assert.equal(get('error')[0].start,9);assert.equal(get('error')[0].end,10);
+  assert.equal(get('slow')[0].start,9);assert.equal(get('slow')[0].end,10);
+  assert.ok(Math.abs(get('overshoot')[0].start-10.2)<1e-8);assert.ok(get('saturation').length>0);
+});
 console.log(`${cases} simulation tests passed. These do not validate a real motor or browser rendering.`);
